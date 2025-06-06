@@ -1,0 +1,131 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme */
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    
+    --primary: 252 56% 57%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 252 56% 57%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark theme */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 252 56% 57%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 252 56% 57%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  .glass-panel {
+    @apply bg-secondary/30 backdrop-blur-sm border border-white/10 rounded-lg;
+  }
+  
+  .message-container {
+    @apply p-4 rounded-lg;
+  }
+  
+  .user-message {
+    @apply bg-secondary/40 text-foreground;
+  }
+  
+  .ai-message {
+    @apply bg-secondary/20 text-foreground;
+  }
+  
+  .code-block {
+    @apply bg-syntax text-syntax-foreground p-4 rounded-md font-mono text-sm my-3 overflow-x-auto;
+  }
+
+  .loading-dots span {
+    @apply inline-block w-2 h-2 rounded-full bg-primary mx-0.5;
+    animation-delay: calc(var(--dot-index) * 0.16s);
+  }
+}
+
+/* Animation for loader dots */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Responsive CSS */
+@media (max-width: 768px) {
+  .sidebar-full {
+    @apply hidden;
+  }
+  
+  .mobile-nav {
+    @apply block;
+  }
+}
+
+/* Enhance loading animation */
+.animate-blink {
+  animation: pulse 1.5s infinite;
+}
