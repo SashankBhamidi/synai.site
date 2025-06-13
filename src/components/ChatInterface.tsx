@@ -436,8 +436,3 @@ export function ChatInterface() {
   );
 }
 
-function Bot(props: React.ComponentProps<typeof LucideBot>) {
-  return (
-    <LucideBot {...props} />
-  );
-}

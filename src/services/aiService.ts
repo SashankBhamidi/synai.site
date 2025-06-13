@@ -1,7 +1,6 @@
 
 import { ProviderFactory, ProviderType } from './providers/providerFactory';
 import type { AiRequestOptions, StreamCallbacks } from './providers/baseProviderService';
-import { getApiKey } from "../utils/apiKeyStorage";
 import { toast } from "sonner";
 
 /**
@@ -18,29 +17,6 @@ export const sendAiMessage = async (provider: string, options: AiRequestOptions)
   return await providerService.sendRequest(options);
 };
 
-/**
- * Function specific to OpenAI requests
- */
-export const sendOpenAIRequest = async (options: AiRequestOptions) => {
-  const providerService = ProviderFactory.getProvider('openai');
-  return await providerService.sendRequest(options);
-};
-
-/**
- * Function specific to Anthropic requests
- */
-export const sendAnthropicRequest = async (options: AiRequestOptions) => {
-  const providerService = ProviderFactory.getProvider('anthropic');
-  return await providerService.sendRequest(options);
-};
-
-/**
- * Function specific to Perplexity requests
- */
-export const sendPerplexityRequest = async (options: AiRequestOptions) => {
-  const providerService = ProviderFactory.getProvider('perplexity');
-  return await providerService.sendRequest(options);
-};
 
 /**
  * Validate an API key by making a minimal request
@@ -93,4 +69,4 @@ const checkKeyFormat = (provider: ProviderType, apiKey: string): boolean => {
 };
 
 // Re-export types for use in other files
-export type { AiRequestOptions, StreamCallbacks };
+export type { AiRequestOptions };

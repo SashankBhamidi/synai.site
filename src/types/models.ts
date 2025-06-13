@@ -12,13 +12,3 @@ export interface ModelGroup {
   models: AIModel[];
 }
 
-// New interfaces for better organization
-export interface ModelCategory {
-  name: string;
-  models: AIModel[];
-}
-
-export interface ProviderModels {
-  provider: string;
-  categories: ModelCategory[];
-}

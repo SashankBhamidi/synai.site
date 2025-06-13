@@ -15,6 +15,3 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   return;
 }
 
-export function useKeyboardShortcutsHelp(shortcuts: KeyboardShortcut[]) {
-  return shortcuts;
-}
