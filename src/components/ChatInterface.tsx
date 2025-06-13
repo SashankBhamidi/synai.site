@@ -48,6 +48,20 @@ export function ChatInterface() {
   // Use settings from context
   const { temperature, enableMemory } = useSettings();
 
+  // Save current conversation
+  const saveCurrentConversation = useCallback(() => {
+    if (currentConversation && messages.length > 0) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversation);
+      if (conversation) {
+        saveConversation(conversation, messages);
+        console.log('Saved current conversation with', messages.length, 'messages');
+        return true;
+      }
+    }
+    return false;
+  }, [currentConversation, messages]);
+
   // Handle conversation changes
   const handleConversationChange = useCallback((event: Event) => {
     const customEvent = event as CustomEvent;
@@ -55,22 +69,21 @@ export function ChatInterface() {
     
     console.log('Conversation change event received:', conversationId);
     
-    // Save current conversation before switching
-    if (currentConversation && messages.length > 0) {
-      const conversations = getConversations();
-      const conversation = conversations.find(c => c.id === currentConversation);
-      if (conversation) {
-        saveConversation(conversation, messages);
-        console.log('Saved current conversation before switching');
-      }
+    // Don't switch if it's the same conversation
+    if (conversationId === currentConversation) {
+      console.log('Same conversation, no switch needed');
+      return;
     }
+    
+    // Save current conversation before switching
+    saveCurrentConversation();
     
     // Switch to new conversation
     setCurrentConversation(conversationId);
     const conversationMessages = getConversationMessages(conversationId);
     setMessages(conversationMessages);
-    console.log('Switched to conversation with messages:', conversationMessages.length);
-  }, [currentConversation, messages]);
+    console.log('Switched to conversation', conversationId, 'with', conversationMessages.length, 'messages');
+  }, [currentConversation, saveCurrentConversation]);
 
   // Initialize conversation
   useEffect(() => {
@@ -120,6 +133,21 @@ export function ChatInterface() {
     };
   }, [handleConversationChange]);
 
+  // Save conversation on component unmount or page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      saveCurrentConversation();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      // Save on cleanup
+      saveCurrentConversation();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [saveCurrentConversation]);
+
   // When selected provider changes, update the model to the default for that provider
   useEffect(() => {
     const defaultModelForProvider = getDefaultModelForProvider(selectedProvider);
@@ -132,13 +160,16 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Save messages whenever they change
+  // Save messages whenever they change (with debounce)
   useEffect(() => {
-    if (currentConversation && messages.length > 0) {
+    if (!currentConversation || messages.length === 0) return;
+    
+    const timeoutId = setTimeout(() => {
       const conversations = getConversations();
       const conversation = conversations.find(c => c.id === currentConversation);
       
       if (conversation) {
+        // Update title if it's still "New conversation"
         if (conversation.title === "New conversation" && messages.length > 0) {
           const firstUserMsg = messages.find(m => m.role === "user");
           if (firstUserMsg) {
@@ -148,9 +179,11 @@ export function ChatInterface() {
         }
         
         saveConversation(conversation, messages);
-        console.log('Saved conversation with messages:', messages.length);
+        console.log('Auto-saved conversation', currentConversation, 'with', messages.length, 'messages');
       }
-    }
+    }, 500); // 500ms debounce
+    
+    return () => clearTimeout(timeoutId);
   }, [messages, currentConversation]);
 
   const generateConversationTitle = (userMessage: string): string => {
@@ -307,6 +340,9 @@ export function ChatInterface() {
   };
 
   const handleClearChat = () => {
+    // Save current conversation before clearing
+    saveCurrentConversation();
+    
     const newConversation = createNewConversation();
     setCurrentConversation(newConversation.id);
     setMessages([]);

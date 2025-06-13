@@ -103,8 +103,20 @@ export function ChatSidebar() {
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Listen for conversation updates
+    const handleConversationUpdate = () => {
+      loadConversations();
+    };
+    
+    window.addEventListener('conversation-updated', handleConversationUpdate);
+    
+    // Periodic refresh to ensure sync
+    const intervalId = setInterval(loadConversations, 5000); // Refresh every 5 seconds
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('conversation-updated', handleConversationUpdate);
+      clearInterval(intervalId);
     };
   }, [sortBy]);
   

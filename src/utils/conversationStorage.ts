@@ -49,6 +49,9 @@ export const saveConversation = (conversation: Conversation, messages: Message[]
     // Save messages
     localStorage.setItem(`${MESSAGES_KEY_PREFIX}${conversation.id}`, JSON.stringify(messages));
     
+    // Dispatch event to notify components of conversation update
+    window.dispatchEvent(new CustomEvent('conversation-updated', { detail: conversation.id }));
+    
     console.log(`Saved conversation "${conversation.title}" with ${messages.length} messages`);
   } catch (error) {
     console.error('Error saving conversation:', error);
