@@ -4,6 +4,7 @@ import { Message } from "@/types";
 import { cn } from "@/lib/utils";
 import { User, Bot, Check, X } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { CopyButton } from "./CopyButton";
 import { MessageActions } from "./MessageActions";
 import { Textarea } from "@/components/ui/textarea";
@@ -220,6 +221,7 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
           ) : (
             <ReactMarkdown 
               className="prose dark:prose-invert prose-sm max-w-none"
+              remarkPlugins={[remarkGfm]}
               components={markdownComponents}
             >
               {message.content}
