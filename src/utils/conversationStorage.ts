@@ -1,5 +1,5 @@
 
-import { Conversation, Message } from "@/types";
+import { Conversation, Message, AIModel } from "@/types";
 
 const CONVERSATIONS_KEY = 'synthesis-ai-conversations';
 const MESSAGES_KEY_PREFIX = 'synthesis-ai-messages-';
@@ -11,7 +11,12 @@ export const getConversations = (): Conversation[] => {
     if (!stored) return [];
     
     const conversations = JSON.parse(stored);
-    return conversations.map((conv: any) => ({
+    return conversations.map((conv: {
+      id: string;
+      title: string;
+      createdAt: string;
+      updatedAt: string;
+    }) => ({
       ...conv,
       createdAt: new Date(conv.createdAt),
       updatedAt: new Date(conv.updatedAt)
@@ -56,7 +61,14 @@ export const getConversationMessages = (conversationId: string): Message[] => {
     if (!stored) return [];
     
     const messages = JSON.parse(stored);
-    return messages.map((msg: any) => ({
+    return messages.map((msg: {
+      id: string;
+      role: string;
+      content: string;
+      timestamp: string;
+      model?: AIModel;
+      regenerationCount?: number;
+    }) => ({
       ...msg,
       timestamp: new Date(msg.timestamp)
     }));
@@ -192,7 +204,12 @@ export const importConversations = async (file: File): Promise<void> => {
     const existingConversations = getConversations();
     const newConversations = [...existingConversations];
     
-    importData.conversations.forEach((conv: any) => {
+    importData.conversations.forEach((conv: {
+      id: string;
+      title: string;
+      createdAt: string;
+      updatedAt: string;
+    }) => {
       // Check if conversation already exists
       const existsIndex = newConversations.findIndex(existing => existing.id === conv.id);
       
@@ -210,7 +227,14 @@ export const importConversations = async (file: File): Promise<void> => {
       
       // Import messages for this conversation
       if (importData.messages[conv.id]) {
-        const messages = importData.messages[conv.id].map((msg: any) => ({
+        const messages = importData.messages[conv.id].map((msg: {
+          id: string;
+          role: string;
+          content: string;
+          timestamp: string;
+          model?: AIModel;
+          regenerationCount?: number;
+        }) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));

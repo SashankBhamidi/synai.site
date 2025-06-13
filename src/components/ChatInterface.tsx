@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Message, AIModel } from "@/types";
 import { MessageItem } from "./MessageItem";
@@ -43,12 +43,39 @@ export function ChatInterface() {
   const isMobile = useIsMobile();
   const [inputValue, setInputValue] = useState("");
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Use settings from context
   const { temperature, enableMemory } = useSettings();
 
+  // Handle conversation changes
+  const handleConversationChange = useCallback((event: Event) => {
+    const customEvent = event as CustomEvent;
+    const conversationId = customEvent.detail;
+    
+    console.log('Conversation change event received:', conversationId);
+    
+    // Save current conversation before switching
+    if (currentConversation && messages.length > 0) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversation);
+      if (conversation) {
+        saveConversation(conversation, messages);
+        console.log('Saved current conversation before switching');
+      }
+    }
+    
+    // Switch to new conversation
+    setCurrentConversation(conversationId);
+    const conversationMessages = getConversationMessages(conversationId);
+    setMessages(conversationMessages);
+    console.log('Switched to conversation with messages:', conversationMessages.length);
+  }, [currentConversation, messages]);
+
   // Initialize conversation
   useEffect(() => {
+    if (isInitialized) return;
+    
     const loadInitialConversation = async () => {
       const currentId = getCurrentConversation();
       const existingConversations = getConversations();
@@ -81,37 +108,17 @@ export function ChatInterface() {
     };
     
     loadInitialConversation();
-    
-    // Listen for conversation changes
-    const handleConversationChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const conversationId = customEvent.detail;
-      
-      console.log('Conversation change event received:', conversationId);
-      
-      // Save current conversation before switching
-      if (currentConversation && messages.length > 0) {
-        const conversations = getConversations();
-        const conversation = conversations.find(c => c.id === currentConversation);
-        if (conversation) {
-          saveConversation(conversation, messages);
-          console.log('Saved current conversation before switching');
-        }
-      }
-      
-      // Switch to new conversation
-      setCurrentConversation(conversationId);
-      const conversationMessages = getConversationMessages(conversationId);
-      setMessages(conversationMessages);
-      console.log('Switched to conversation with messages:', conversationMessages.length);
-    };
-    
+    setIsInitialized(true);
+  }, [isInitialized]);
+
+  // Listen for conversation changes
+  useEffect(() => {
     window.addEventListener('conversation-changed', handleConversationChange);
     
     return () => {
       window.removeEventListener('conversation-changed', handleConversationChange);
     };
-  }, []);
+  }, [handleConversationChange]);
 
   // When selected provider changes, update the model to the default for that provider
   useEffect(() => {
@@ -224,7 +231,7 @@ export function ChatInterface() {
 
     try {
       const provider = selectedProvider.toLowerCase();
-      const useSimulatedResponse = !hasApiKey(provider as any);
+      const useSimulatedResponse = !hasApiKey(provider as 'openai' | 'anthropic' | 'perplexity');
       
       const apiMessages = convertMessagesToApiFormat(updatedMessages);
       console.log('Sending to AI with settings:', { 
@@ -429,7 +436,7 @@ export function ChatInterface() {
   );
 }
 
-function Bot(props: any) {
+function Bot(props: React.ComponentProps<typeof LucideBot>) {
   return (
     <LucideBot {...props} />
   );

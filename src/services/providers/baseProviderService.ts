@@ -1,4 +1,9 @@
 
+export interface ApiMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export interface AiRequestOptions {
   message: string;
   model?: string;
@@ -6,10 +11,17 @@ export interface AiRequestOptions {
   maxTokens?: number;
   stream?: boolean;
   simulateResponse?: boolean;
-  messages?: Array<{
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-  }>;
+  messages?: ApiMessage[];
+}
+
+export interface AiResponse {
+  content: string;
+  model?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 export interface StreamCallbacks {
@@ -25,7 +37,7 @@ export abstract class BaseProviderService {
     this.apiKey = apiKey;
   }
 
-  abstract sendRequest(options: AiRequestOptions): Promise<any>;
+  abstract sendRequest(options: AiRequestOptions): Promise<string>;
 
   protected validateApiKey(): void {
     if (!this.apiKey) {
@@ -33,22 +45,24 @@ export abstract class BaseProviderService {
     }
   }
 
-  protected handleApiError(error: any, providerName: string): string {
+  protected handleApiError(error: unknown, providerName: string): string {
     console.error(`${providerName} API Error:`, error);
     
-    if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage?.includes('401') || errorMessage?.includes('unauthorized')) {
       return `Authentication failed with ${providerName}. Please check your API key.`;
     }
     
-    if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+    if (errorMessage?.includes('429') || errorMessage?.includes('rate limit')) {
       return `Rate limit exceeded for ${providerName}. Please try again later.`;
     }
     
-    if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+    if (errorMessage?.includes('Failed to fetch') || errorMessage?.includes('network')) {
       return `Network error connecting to ${providerName}. Please check your connection and try again.`;
     }
     
-    return `Error communicating with ${providerName}: ${error.message || 'Unknown error'}`;
+    return `Error communicating with ${providerName}: ${errorMessage || 'Unknown error'}`;
   }
 
   abstract validateKey(apiKey: string): Promise<boolean>;

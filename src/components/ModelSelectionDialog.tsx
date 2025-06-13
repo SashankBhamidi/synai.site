@@ -28,7 +28,7 @@ export function ModelSelectionDialog({ selectedModel, onSelectModel }: ModelSele
 
   // Filter only providers with API keys
   const availableProviders = modelsByProvider.filter(
-    (group) => hasApiKey(group.provider.toLowerCase() as any)
+    (group) => hasApiKey(group.provider.toLowerCase() as 'openai' | 'anthropic' | 'perplexity')
   );
 
   // If no providers have API keys, show all providers
@@ -69,7 +69,7 @@ export function ModelSelectionDialog({ selectedModel, onSelectModel }: ModelSele
                   className="relative"
                 >
                   {group.provider}
-                  {!hasApiKey(group.provider.toLowerCase() as any) && (
+                  {!hasApiKey(group.provider.toLowerCase() as 'openai' | 'anthropic' | 'perplexity') && (
                     <Badge 
                       variant="outline" 
                       className="absolute -top-2 -right-2 text-xs px-1 py-0"
@@ -99,7 +99,7 @@ export function ModelSelectionDialog({ selectedModel, onSelectModel }: ModelSele
                   ))}
                 </div>
                 
-                {!hasApiKey(group.provider.toLowerCase() as any) && (
+                {!hasApiKey(group.provider.toLowerCase() as 'openai' | 'anthropic' | 'perplexity') && (
                   <div className="text-sm text-amber-500 mt-2">
                     Using demo mode. Configure API key in settings to use actual models.
                   </div>

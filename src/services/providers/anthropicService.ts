@@ -1,5 +1,5 @@
 
-import { BaseProviderService, AiRequestOptions } from "./baseProviderService";
+import { BaseProviderService, AiRequestOptions, ApiMessage } from "./baseProviderService";
 import Anthropic from '@anthropic-ai/sdk';
 
 export class AnthropicService extends BaseProviderService {
@@ -15,7 +15,7 @@ export class AnthropicService extends BaseProviderService {
     }
   }
 
-  async sendRequest(options: AiRequestOptions): Promise<any> {
+  async sendRequest(options: AiRequestOptions): Promise<string> {
     const model = options.model || 'claude-3-5-sonnet-20240620';
     
     try {
@@ -54,7 +54,7 @@ export class AnthropicService extends BaseProviderService {
     }
   }
 
-  private convertMessagesToAnthropicFormat(messages: Array<{role: string, content: string}>) {
+  private convertMessagesToAnthropicFormat(messages: ApiMessage[]) {
     return messages
       .filter(msg => msg.role !== 'system') // Anthropic doesn't use system messages in the messages array
       .map(msg => ({
@@ -78,7 +78,7 @@ export class AnthropicService extends BaseProviderService {
     return content;
   }
 
-  private generateSimulatedResponse(assistantName: string, model: string, messages?: Array<{role: string, content: string}>): string {
+  private generateSimulatedResponse(assistantName: string, model: string, messages?: ApiMessage[]): string {
     // Use conversation context for better simulated responses
     if (messages && messages.length > 0) {
       const lastUserMessage = messages[messages.length - 1]?.content || "Hello";

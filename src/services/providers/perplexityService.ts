@@ -1,12 +1,12 @@
 
-import { BaseProviderService, AiRequestOptions } from "./baseProviderService";
+import { BaseProviderService, AiRequestOptions, ApiMessage } from "./baseProviderService";
 
 export class PerplexityService extends BaseProviderService {
   constructor(apiKey: string | null) {
     super(apiKey);
   }
 
-  async sendRequest(options: AiRequestOptions): Promise<any> {
+  async sendRequest(options: AiRequestOptions): Promise<string> {
     this.validateApiKey();
     
     const model = options.model || 'llama-3.1-sonar-small-128k-online';
@@ -18,7 +18,7 @@ export class PerplexityService extends BaseProviderService {
       }
       
       // Perplexity requires specific message formatting - only user and assistant roles
-      let messages = options.messages || [];
+      const messages = options.messages || [];
       
       // Filter out system messages and ensure proper role formatting
       const perplexityMessages = messages

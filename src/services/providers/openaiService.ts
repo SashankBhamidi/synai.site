@@ -1,12 +1,12 @@
 
-import { BaseProviderService, AiRequestOptions } from "./baseProviderService";
+import { BaseProviderService, AiRequestOptions, ApiMessage } from "./baseProviderService";
 
 export class OpenAIService extends BaseProviderService {
   constructor(apiKey: string | null) {
     super(apiKey);
   }
 
-  async sendRequest(options: AiRequestOptions): Promise<any> {
+  async sendRequest(options: AiRequestOptions): Promise<string> {
     this.validateApiKey();
     
     const model = options.model || 'gpt-4o';
@@ -112,7 +112,7 @@ export class OpenAIService extends BaseProviderService {
     return content;
   }
 
-  private generateSimulatedResponse(assistantName: string, model: string, messages?: Array<{role: string, content: string}>): string {
+  private generateSimulatedResponse(assistantName: string, model: string, messages?: ApiMessage[]): string {
     // Use conversation context for better simulated responses
     if (messages && messages.length > 0) {
       const lastUserMessage = messages[messages.length - 1]?.content || "Hello";

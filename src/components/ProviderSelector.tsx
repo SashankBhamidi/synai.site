@@ -21,7 +21,7 @@ export function ProviderSelector({ selectedProvider, onSelectProvider }: Provide
 
   const providers = modelsByProvider.map(group => ({
     name: group.provider,
-    hasApiKey: hasApiKey(group.provider.toLowerCase() as any)
+    hasApiKey: hasApiKey(group.provider.toLowerCase() as 'openai' | 'anthropic' | 'perplexity')
   }));
 
   const handleSelectProvider = (provider: string) => {

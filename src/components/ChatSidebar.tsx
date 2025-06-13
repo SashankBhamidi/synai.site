@@ -74,7 +74,7 @@ export function ChatSidebar() {
       const currentId = getCurrentConversation();
       
       // Mark the current conversation as active and sort
-      let updatedConversations = storedConversations.map(conv => ({
+      const updatedConversations = storedConversations.map(conv => ({
         ...conv,
         active: conv.id === currentId
       }));
