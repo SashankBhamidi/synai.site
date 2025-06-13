@@ -5,17 +5,14 @@ import { MessageItem } from "./MessageItem";
 import { ChatInput } from "./ChatInput";
 import { ModelSelector } from "./ModelSelector";
 import { ProviderSelector } from "./ProviderSelector";
-import { LoadingIndicator } from "./LoadingIndicator";
 import { TypingIndicator } from "./TypingIndicator";
 import { SettingsDialog } from "./SettingsDialog";
-import { ModelSelectionDialog } from "./ModelSelectionDialog";
-import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { ThemeToggle } from "./ThemeToggle";
 import { HelpDialog } from "./HelpDialog";
 import { WelcomeTooltip } from "./WelcomeTooltip";
-import { getDefaultModel, getAvailableModelsForProvider, getDefaultModelForProvider, modelsByProvider } from "@/data/models";
+import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
 import { Button } from "@/components/ui/button";
-import { Trash2, MessagesSquare, Bot as LucideBot } from "lucide-react";
+import { Trash2, MessagesSquare } from "lucide-react";
 import { sendAiMessage } from "@/services/aiService";
 import { hasApiKey, getConfiguredProviders } from "@/utils/apiKeyStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -23,13 +20,14 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSettings } from "@/contexts/SettingsContext";
 import { 
-  saveConversation, 
-  getConversations, 
-  getConversationMessages, 
+  getConversations,
+  getConversationMessages,
   getCurrentConversation,
-  createNewConversation,
+  getOrCreateConversation,
+  saveConversation,
+  createConversation,
   setCurrentConversation,
-  generateConversationTitle,
+  CONVERSATION_EVENTS
 } from "@/utils/conversationStorage";
 
 export function ChatInterface() {
@@ -37,116 +35,146 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>(getDefaultModel());
   const [selectedProvider, setSelectedProvider] = useState<string>(getDefaultModel().provider);
-  const [currentConversation, setCurrentConversation] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const [inputValue, setInputValue] = useState("");
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Use settings from context
   const { temperature, enableMemory } = useSettings();
 
-  // Save current conversation
-  const saveCurrentConversation = useCallback(() => {
-    if (currentConversation && messages.length > 0) {
-      const conversations = getConversations();
-      const conversation = conversations.find(c => c.id === currentConversation);
-      if (conversation) {
-        saveConversation(conversation, messages);
-        console.log('Saved current conversation with', messages.length, 'messages');
-        return true;
-      }
-    }
-    return false;
-  }, [currentConversation, messages]);
-
-  // Handle conversation changes
-  const handleConversationChange = useCallback((event: Event) => {
-    const customEvent = event as CustomEvent;
-    const conversationId = customEvent.detail;
-    
-    console.log('Conversation change event received:', conversationId);
-    
-    // Don't switch if it's the same conversation
-    if (conversationId === currentConversation) {
-      console.log('Same conversation, no switch needed');
-      return;
-    }
-    
-    // Save current conversation before switching
-    saveCurrentConversation();
-    
-    // Switch to new conversation
-    setCurrentConversation(conversationId);
-    const conversationMessages = getConversationMessages(conversationId);
-    setMessages(conversationMessages);
-    console.log('Switched to conversation', conversationId, 'with', conversationMessages.length, 'messages');
-  }, [currentConversation, saveCurrentConversation]);
-
-  // Initialize conversation
+  // Initialize conversation system
   useEffect(() => {
-    if (isInitialized) return;
-    
-    const loadInitialConversation = async () => {
+    const initializeConversation = () => {
       const currentId = getCurrentConversation();
-      const existingConversations = getConversations();
+      const conversations = getConversations();
       
-      console.log('Loading initial conversation:', { currentId, existingConversationsCount: existingConversations.length });
+      console.log('Initializing conversation system:', { currentId, conversationCount: conversations.length });
       
-      if (currentId) {
+      if (currentId && conversations.find(c => c.id === currentId)) {
         // Load existing current conversation
-        setCurrentConversation(currentId);
-        const existingMessages = getConversationMessages(currentId);
-        setMessages(existingMessages);
-        console.log('Loaded current conversation with messages:', existingMessages.length);
-      } else if (existingConversations.length > 0) {
-        // If there's no current conversation but conversations exist, load the most recent one
-        const mostRecentConversation = existingConversations.sort((a, b) => 
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )[0];
-        
-        setCurrentConversation(mostRecentConversation.id);
-        setCurrentConversation(mostRecentConversation.id);
-        const existingMessages = getConversationMessages(mostRecentConversation.id);
-        setMessages(existingMessages);
-        console.log('Loaded most recent conversation with messages:', existingMessages.length);
+        setCurrentConversationId(currentId);
+        const conversationMessages = getConversationMessages(currentId);
+        setMessages(conversationMessages);
+        console.log('Loaded current conversation:', currentId, 'with', conversationMessages.length, 'messages');
+      } else if (conversations.length > 0) {
+        // Switch to most recent conversation
+        const mostRecent = conversations[0];
+        setCurrentConversation(mostRecent.id);
+        setCurrentConversationId(mostRecent.id);
+        const conversationMessages = getConversationMessages(mostRecent.id);
+        setMessages(conversationMessages);
+        console.log('Loaded most recent conversation:', mostRecent.id, 'with', conversationMessages.length, 'messages');
       } else {
-        // Only create a new conversation if there are no existing conversations
-        const newConversation = createNewConversation();
-        setCurrentConversation(newConversation.id);
-        console.log('Created new conversation (no existing conversations found)');
+        // No conversations exist - start fresh (don't create one yet)
+        setCurrentConversationId(null);
+        setMessages([]);
+        console.log('No conversations found - starting fresh');
       }
     };
-    
-    loadInitialConversation();
-    setIsInitialized(true);
-  }, [isInitialized]);
 
-  // Listen for conversation changes
+    initializeConversation();
+  }, []);
+
+  // Listen for conversation events
   useEffect(() => {
-    window.addEventListener('conversation-changed', handleConversationChange);
-    
-    return () => {
-      window.removeEventListener('conversation-changed', handleConversationChange);
+    const handleConversationSwitched = (event: CustomEvent) => {
+      const { conversationId } = event.detail;
+      console.log('Conversation switched event:', conversationId);
+      
+      // Save current conversation before switching
+      if (currentConversationId && messages.length > 0) {
+        const conversations = getConversations();
+        const currentConversation = conversations.find(c => c.id === currentConversationId);
+        if (currentConversation) {
+          saveConversation(currentConversation, messages);
+          console.log('Saved current conversation before switching');
+        }
+      }
+      
+      // Load new conversation
+      setCurrentConversationId(conversationId);
+      const newMessages = getConversationMessages(conversationId);
+      setMessages(newMessages);
+      console.log('Switched to conversation:', conversationId, 'with', newMessages.length, 'messages');
     };
-  }, [handleConversationChange]);
 
-  // Save conversation on component unmount or page unload
+    const handleConversationDeleted = (event: CustomEvent) => {
+      const { conversationId, data } = event.detail;
+      console.log('Conversation deleted event:', conversationId, data);
+      
+      if (conversationId === currentConversationId) {
+        if (data.newCurrentId) {
+          // Switch to new conversation
+          setCurrentConversationId(data.newCurrentId);
+          const newMessages = getConversationMessages(data.newCurrentId);
+          setMessages(newMessages);
+        } else {
+          // No conversations left
+          setCurrentConversationId(null);
+          setMessages([]);
+        }
+      }
+    };
+
+    const handleConversationsCleared = () => {
+      console.log('All conversations cleared');
+      setCurrentConversationId(null);
+      setMessages([]);
+    };
+
+    // Add event listeners
+    window.addEventListener(CONVERSATION_EVENTS.SWITCHED, handleConversationSwitched as EventListener);
+    window.addEventListener(CONVERSATION_EVENTS.DELETED, handleConversationDeleted as EventListener);
+    window.addEventListener(CONVERSATION_EVENTS.CLEARED, handleConversationsCleared);
+
+    return () => {
+      window.removeEventListener(CONVERSATION_EVENTS.SWITCHED, handleConversationSwitched as EventListener);
+      window.removeEventListener(CONVERSATION_EVENTS.DELETED, handleConversationDeleted as EventListener);
+      window.removeEventListener(CONVERSATION_EVENTS.CLEARED, handleConversationsCleared);
+    };
+  }, [currentConversationId, messages]);
+
+  // Auto-save messages when they change
+  useEffect(() => {
+    if (currentConversationId && messages.length > 0) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversationId);
+      
+      if (conversation) {
+        // Debounce saves
+        const timeoutId = setTimeout(() => {
+          saveConversation(conversation, messages);
+          console.log('Auto-saved conversation:', currentConversationId, 'with', messages.length, 'messages');
+        }, 1000);
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [currentConversationId, messages]);
+
+  // Save conversation before page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
-      saveCurrentConversation();
+      if (currentConversationId && messages.length > 0) {
+        const conversations = getConversations();
+        const conversation = conversations.find(c => c.id === currentConversationId);
+        if (conversation) {
+          saveConversation(conversation, messages);
+        }
+      }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
     return () => {
-      // Save on cleanup
-      saveCurrentConversation();
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also save on unmount
+      handleBeforeUnload();
     };
-  }, [saveCurrentConversation]);
+  }, [currentConversationId, messages]);
 
   // When selected provider changes, update the model to the default for that provider
   useEffect(() => {
@@ -159,50 +187,6 @@ export function ChatInterface() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Save messages whenever they change (with debounce)
-  useEffect(() => {
-    if (!currentConversation || messages.length === 0) return;
-    
-    const timeoutId = setTimeout(() => {
-      const conversations = getConversations();
-      const conversation = conversations.find(c => c.id === currentConversation);
-      
-      if (conversation) {
-        // Update title if it's still "New conversation"
-        if (conversation.title === "New conversation" && messages.length > 0) {
-          const firstUserMsg = messages.find(m => m.role === "user");
-          if (firstUserMsg) {
-            const newTitle = generateConversationTitle(firstUserMsg.content);
-            conversation.title = newTitle;
-          }
-        }
-        
-        saveConversation(conversation, messages);
-        console.log('Auto-saved conversation', currentConversation, 'with', messages.length, 'messages');
-      }
-    }, 500); // 500ms debounce
-    
-    return () => clearTimeout(timeoutId);
-  }, [messages, currentConversation]);
-
-  const generateConversationTitle = (userMessage: string): string => {
-    // Generate a smart title from the first user message
-    const words = userMessage.split(' ').slice(0, 6); // Take first 6 words
-    let title = words.join(' ');
-    
-    // If it's too long, truncate
-    if (title.length > 40) {
-      title = title.substring(0, 37) + "...";
-    }
-    
-    // If it's too short, add more context
-    if (title.length < 10 && userMessage.length > title.length) {
-      title = userMessage.substring(0, 37) + (userMessage.length > 37 ? "..." : "");
-    }
-    
-    return title || "New conversation";
-  };
 
   const convertMessagesToApiFormat = (messages: Message[]) => {
     // Use enableMemory setting to control whether to send full conversation context
@@ -226,8 +210,7 @@ export function ChatInterface() {
     console.log('Converting messages to API format:', {
       originalCount: messages.length,
       apiCount: apiMessages.length,
-      memoryEnabled: enableMemory,
-      messages: apiMessages
+      memoryEnabled: enableMemory
     });
     
     return apiMessages;
@@ -238,12 +221,29 @@ export function ChatInterface() {
       setInputValue("");
     }
     
-    if (!currentConversation) {
-      const newConversation = createNewConversation();
-      // Generate a better title from the first message
-      const title = generateConversationTitle(content);
-      newConversation.title = title;
-      setCurrentConversation(newConversation.id);
+    // Get or create conversation - this ensures every message has a conversation
+    const { conversation, isNew } = getOrCreateConversation(content);
+    
+    if (isNew || currentConversationId !== conversation.id) {
+      // Save current conversation if switching
+      if (currentConversationId && messages.length > 0) {
+        const conversations = getConversations();
+        const currentConversation = conversations.find(c => c.id === currentConversationId);
+        if (currentConversation) {
+          saveConversation(currentConversation, messages);
+        }
+      }
+      
+      // Switch to new/different conversation
+      setCurrentConversationId(conversation.id);
+      if (isNew) {
+        setMessages([]);
+        console.log('Created new conversation:', conversation.id, conversation.title);
+      } else {
+        const existingMessages = getConversationMessages(conversation.id);
+        setMessages(existingMessages);
+        console.log('Switched to existing conversation:', conversation.id);
+      }
     }
     
     let updatedMessages = messages;
@@ -267,16 +267,14 @@ export function ChatInterface() {
       const useSimulatedResponse = !hasApiKey(provider as 'openai' | 'anthropic' | 'perplexity');
       
       const apiMessages = convertMessagesToApiFormat(updatedMessages);
-      console.log('Sending to AI with settings:', { 
-        messageCount: apiMessages.length, 
+      console.log('Sending to AI:', { 
         provider, 
         model: selectedModel.id,
+        messageCount: apiMessages.length,
         temperature,
-        memoryEnabled: enableMemory,
-        fullContext: enableMemory
+        memoryEnabled: enableMemory
       });
       
-      // Use temperature from settings with some randomness for regeneration
       const requestOptions = {
         message: content,
         model: selectedModel.id,
@@ -296,7 +294,11 @@ export function ChatInterface() {
         regenerationCount: isRegeneration ? (messages[messages.length - 1]?.regenerationCount || 0) + 1 : 0
       };
       
-      setMessages((prev) => [...prev, aiMessage]);
+      const finalMessages = [...updatedMessages, aiMessage];
+      setMessages(finalMessages);
+      
+      // Immediately save the conversation with new messages
+      saveConversation(conversation, finalMessages);
     } catch (error) {
       console.error('Error sending message to AI provider:', error);
       
@@ -341,17 +343,21 @@ export function ChatInterface() {
 
   const handleClearChat = () => {
     // Save current conversation before clearing
-    saveCurrentConversation();
+    if (currentConversationId && messages.length > 0) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversationId);
+      if (conversation) {
+        saveConversation(conversation, messages);
+      }
+    }
     
-    const newConversation = createNewConversation();
-    setCurrentConversation(newConversation.id);
+    // Create new conversation
+    const newConversation = createConversation();
+    setCurrentConversationId(newConversation.id);
     setMessages([]);
-    toast.success("Chat cleared");
-    
-    // Dispatch conversation change event
-    window.dispatchEvent(new CustomEvent('conversation-changed', { detail: newConversation.id }));
+    toast.success("New chat started");
   };
-  
+
   const handleInputChange = (value: string) => {
     setInputValue(value);
   };
@@ -399,10 +405,10 @@ export function ChatInterface() {
             size="icon"
             onClick={handleClearChat}
             className="rounded-full h-8 w-8"
-            title="Clear chat"
+            title="New chat"
           >
             <Trash2 size={16} />
-            <span className="sr-only">Clear chat</span>
+            <span className="sr-only">New chat</span>
           </Button>
           
           <HelpDialog />
@@ -411,7 +417,7 @@ export function ChatInterface() {
         </div>
       </header>
       
-      {/* Scrollable Content - This is the only part that should scroll */}
+      {/* Scrollable Content */}
       <div 
         className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
         ref={messagesContainerRef}
@@ -471,4 +477,3 @@ export function ChatInterface() {
     </div>
   );
 }
-
