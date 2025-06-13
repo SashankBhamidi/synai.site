@@ -96,28 +96,38 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
         </div>
       )
     },
-    // Remove table rendering - convert to plain text format
+    // Proper table rendering with styling
     table: ({children}: {children?: React.ReactNode}) => (
-      <div className="my-4 p-3 bg-muted rounded-md font-mono text-sm whitespace-pre-wrap">
-        {children}
+      <div className="my-3 sm:my-4 overflow-x-auto">
+        <table className="min-w-full border-collapse border border-border rounded-md text-sm">
+          {children}
+        </table>
       </div>
     ),
-    thead: ({children}: {children?: React.ReactNode}) => <div>{children}</div>,
-    tbody: ({children}: {children?: React.ReactNode}) => <div>{children}</div>,
-    tr: ({children}: {children?: React.ReactNode}) => (
-      <div className="block">
+    thead: ({children}: {children?: React.ReactNode}) => (
+      <thead className="bg-muted/50">
         {children}
-      </div>
+      </thead>
+    ),
+    tbody: ({children}: {children?: React.ReactNode}) => (
+      <tbody className="divide-y divide-border">
+        {children}
+      </tbody>
+    ),
+    tr: ({children}: {children?: React.ReactNode}) => (
+      <tr className="hover:bg-muted/30">
+        {children}
+      </tr>
     ),
     th: ({children}: {children?: React.ReactNode}) => (
-      <span className="font-bold mr-4">
+      <th className="border border-border px-2 sm:px-4 py-2 text-left font-semibold bg-muted/20 text-xs sm:text-sm">
         {children}
-      </span>
+      </th>
     ),
     td: ({children}: {children?: React.ReactNode}) => (
-      <span className="mr-4">
+      <td className="border border-border px-2 sm:px-4 py-2 text-xs sm:text-sm">
         {children}
-      </span>
+      </td>
     ),
     h1: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h1 className="text-2xl font-bold my-4 text-foreground border-b pb-2" {...props} />,
     h2: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h2 className="text-xl font-bold my-3 text-foreground" {...props} />,
@@ -149,19 +159,19 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
 
   return (
     <div className={cn(
-      "flex gap-4 items-start group",
+      "flex gap-2 sm:gap-4 items-start group",
       isUser ? "flex-row-reverse" : ""
     )}>
       <div className="flex-shrink-0 mt-0.5">
         <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center",
+          "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center",
           isUser ? "bg-blue-500 text-white" : "bg-primary text-primary-foreground"
         )}>
-          {isUser ? <User size={16} /> : <Bot size={16} />}
+          {isUser ? <User size={12} className="sm:w-4 sm:h-4" /> : <Bot size={12} className="sm:w-4 sm:h-4" />}
         </div>
       </div>
       <div className={cn(
-        "rounded-2xl p-4 max-w-[80%]",
+        "rounded-2xl p-3 sm:p-4 max-w-[85%] sm:max-w-[80%]",
         isUser 
           ? "bg-blue-500 text-white rounded-tr-none" 
           : "bg-secondary/50 dark:bg-secondary/30 rounded-tl-none"

@@ -22,39 +22,77 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
   const isControlled = value !== undefined && onChange !== undefined;
   const currentValue = isControlled ? value : input;
   
-  // Voice recording functionality
-  const startRecording = async () => {
+  // Voice recording functionality using Web Speech API
+  const startRecording = () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const audioChunks: Blob[] = [];
+      // Check if Web Speech API is supported
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      recorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
+      if (!SpeechRecognition) {
+        toast.error("Speech recognition not supported in this browser");
+        return;
+      }
+      
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsRecording(true);
       };
       
-      recorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        // For now, just show a message that voice input was captured
-        toast.info("Voice recorded! Speech-to-text coming soon.");
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
         
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        const fullTranscript = finalTranscript || interimTranscript;
+        if (fullTranscript) {
+          if (isControlled && onChange) {
+            onChange(fullTranscript);
+          } else {
+            setInput(fullTranscript);
+          }
+        }
       };
       
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      toast.success("Recording started...");
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+        if (event.error !== 'aborted') {
+          toast.error("Speech recognition failed. Please try again.");
+        }
+      };
+      
+      recognition.onend = () => {
+        setIsRecording(false);
+        setMediaRecorder(null);
+      };
+      
+      recognition.start();
+      setMediaRecorder(recognition as unknown as MediaRecorder);
     } catch (error) {
-      console.error('Error starting recording:', error);
-      toast.error("Could not access microphone. Please check permissions.");
+      console.error('Error starting speech recognition:', error);
+      toast.error("Could not start speech recognition");
     }
   };
   
   const stopRecording = () => {
     if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
+      if (typeof mediaRecorder.stop === 'function') {
+        mediaRecorder.stop();
+      } else if (typeof mediaRecorder.abort === 'function') {
+        mediaRecorder.abort();
+      }
       setIsRecording(false);
       setMediaRecorder(null);
     }
@@ -121,13 +159,13 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="bg-background/80 backdrop-blur-sm border border-border rounded-xl p-2 flex items-end">
+      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl p-3 flex items-end gap-3 shadow-sm hover:shadow-md transition-shadow">
         <Textarea
           ref={textareaRef}
           value={currentValue}
           onChange={handleInputChange}
-          placeholder={isRecording ? "Recording... Click stop when finished" : "Message Synthesis AI..."}
-          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[50px] max-h-[200px] overflow-y-auto transition-all duration-200"
+          placeholder={isRecording ? "🎤 Recording... Click stop when finished" : "Message Synthesis AI..."}
+          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[50px] max-h-[200px] overflow-y-auto transition-all duration-200 placeholder:text-muted-foreground/70"
           disabled={isLoading || isRecording}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -138,14 +176,14 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
             }
           }}
         />
-        <div className="flex gap-2 ml-2">
+        <div className="flex gap-2 flex-shrink-0">
           <Button
             type="button"
             size="icon"
             variant={isRecording ? "destructive" : "ghost"}
-            className={`rounded-full h-9 w-9 transition-all duration-200 ${
-              isRecording ? 'animate-pulse' : ''
-            }`}
+            className={`rounded-full h-10 w-10 sm:h-10 sm:w-10 transition-all duration-200 ${
+              isRecording ? 'animate-pulse shadow-lg' : 'hover:bg-accent'
+            } touch-manipulation`}
             onClick={toggleRecording}
             disabled={isLoading}
             title={isRecording ? "Stop recording" : "Start voice input"}
@@ -160,7 +198,11 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           <Button 
             type="submit"
             size="icon" 
-            className="rounded-full h-9 w-9"
+            className={`rounded-full h-10 w-10 sm:h-10 sm:w-10 transition-all duration-200 touch-manipulation ${
+              currentValue.trim() && !isLoading && !isRecording 
+                ? 'bg-primary hover:bg-primary/90 shadow-lg scale-105' 
+                : ''
+            }`}
             disabled={!currentValue.trim() || isLoading || isRecording}
           >
             <SendIcon size={18} />

@@ -291,7 +291,7 @@ export function ChatInterface() {
         content: response,
         timestamp: new Date(),
         model: selectedModel,
-        regenerationCount: isRegeneration ? (messages[messages.length - 1]?.regenerationCount || 0) + 1 : 0
+        regenerationCount: isRegeneration ? (messages[messages.length - 1]?.regenerationCount || 0) + 1 : undefined
       };
       
       const finalMessages = [...updatedMessages, aiMessage];
@@ -342,20 +342,14 @@ export function ChatInterface() {
   };
 
   const handleClearChat = () => {
-    // Save current conversation before clearing
-    if (currentConversationId && messages.length > 0) {
-      const conversations = getConversations();
-      const conversation = conversations.find(c => c.id === currentConversationId);
-      if (conversation) {
-        saveConversation(conversation, messages);
-      }
-    }
-    
-    // Create new conversation
-    const newConversation = createConversation();
-    setCurrentConversationId(newConversation.id);
+    // Just clear the current chat messages
     setMessages([]);
-    toast.success("New chat started");
+    setInputValue("");
+    
+    // Reset to no conversation state
+    setCurrentConversationId(null);
+    
+    toast.success("Chat cleared");
   };
 
   const handleInputChange = (value: string) => {
@@ -416,11 +410,11 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">
       {/* Fixed Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <MessagesSquare size={20} className="text-primary flex-shrink-0" />
+      <header className="flex-shrink-0 flex items-center justify-between p-3 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <MessagesSquare size={18} className="text-primary flex-shrink-0 sm:w-5 sm:h-5" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-medium truncate">
+            <h2 className="text-base sm:text-lg font-medium truncate">
               {currentConversationId ? (
                 (() => {
                   const conversations = getConversations();
@@ -432,22 +426,22 @@ export function ChatInterface() {
               )}
             </h2>
             {messages.length > 0 && (
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {messages.length} message{messages.length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <div className={`w-40 ${isMobile ? 'hidden sm:block' : ''}`}>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="hidden md:block w-32 lg:w-40">
             <ProviderSelector 
               selectedProvider={selectedProvider}
               onSelectProvider={handleProviderChange}
             />
           </div>
           
-          <div className={`w-40 ${isMobile ? 'hidden sm:block' : ''}`}>
+          <div className="hidden md:block w-32 lg:w-40">
             <ModelSelector 
               selectedModel={selectedModel}
               onSelectModel={setSelectedModel}
@@ -458,31 +452,38 @@ export function ChatInterface() {
             variant="outline"
             size="icon"
             onClick={handleClearChat}
-            className="rounded-full h-8 w-8"
-            title="New chat"
+            className="rounded-full h-7 w-7 sm:h-8 sm:w-8"
+            title="Clear chat"
           >
-            <Trash2 size={16} />
-            <span className="sr-only">New chat</span>
+            <Trash2 size={14} className="sm:w-4 sm:h-4" />
+            <span className="sr-only">Clear chat</span>
           </Button>
           
-          <HelpDialog />
-          <SettingsDialog />
-          <ThemeToggle />
+          <div className="hidden sm:flex items-center gap-1">
+            <HelpDialog />
+            <SettingsDialog />
+            <ThemeToggle />
+          </div>
+          
+          {/* Mobile menu for settings */}
+          <div className="sm:hidden">
+            <SettingsDialog />
+          </div>
         </div>
       </header>
       
       {/* Scrollable Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
         ref={messagesContainerRef}
       >
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 mb-4 rounded-full bg-gradient-radial from-primary/30 to-transparent flex items-center justify-center">
-              <MessagesSquare size={32} className="text-primary" />
+          <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-8">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4 rounded-full bg-gradient-radial from-primary/30 to-transparent flex items-center justify-center">
+              <MessagesSquare size={24} className="text-primary sm:w-8 sm:h-8" />
             </div>
-            <h2 className="text-2xl font-semibold mb-2">Welcome to Synthesis AI</h2>
-            <p className="text-muted-foreground max-w-md">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Welcome to Synthesis AI</h2>
+            <p className="text-muted-foreground max-w-md text-sm sm:text-base">
               Ask anything or start a conversation with advanced AI models from different providers.
             </p>
           </div>
@@ -505,21 +506,22 @@ export function ChatInterface() {
       </div>
       
       {/* Fixed Footer */}
-      <div className="flex-shrink-0 p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10">
+      <div className="flex-shrink-0 p-3 sm:p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10">
         <ChatInput 
           onSendMessage={handleSendMessage} 
           isLoading={isLoading} 
           value={inputValue}
           onChange={handleInputChange}
         />
-        <div className="mt-2 flex justify-between items-center text-xs">
-          <div className="text-muted-foreground flex items-center">
-            <span>Model: {selectedModel.name} ({selectedModel.provider})</span>
+        <div className="mt-2 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-xs">
+          <div className="text-muted-foreground flex flex-wrap items-center gap-1">
+            <span className="hidden sm:inline">Model: {selectedModel.name} ({selectedModel.provider})</span>
+            <span className="sm:hidden">{selectedModel.name}</span>
             {getConfiguredProviders().length === 0 && (
-              <span className="ml-2 text-yellow-500">(Using simulated responses)</span>
+              <span className="text-yellow-500">(Simulated)</span>
             )}
             {!enableMemory && (
-              <span className="ml-2 text-orange-500">(Memory disabled)</span>
+              <span className="text-orange-500">(No memory)</span>
             )}
           </div>
           <div className="text-muted-foreground">
