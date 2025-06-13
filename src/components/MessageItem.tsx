@@ -1,19 +1,151 @@
 
+import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { Message } from "@/types";
 import { cn } from "@/lib/utils";
-import { User, Bot } from "lucide-react";
+import { User, Bot, Check, X } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { CopyButton } from "./CopyButton";
 import { MessageActions } from "./MessageActions";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 interface MessageItemProps {
   message: Message;
   onRegenerate?: () => void;
+  onEdit?: (messageId: string, newContent: string) => void;
+  onDelete?: (messageId: string) => void;
   isLastMessage?: boolean;
 }
 
-export function MessageItem({ message, onRegenerate, isLastMessage }: MessageItemProps) {
+function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastMessage }: MessageItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isUser = message.role === "user";
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleEdit = () => {
+    setEditContent(message.content);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const newContent = editContent.trim();
+    if (newContent && newContent !== message.content && onEdit) {
+      onEdit(message.id, newContent);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content);
+    setIsEditing(false);
+  };
+
+  const handleDeleteMessage = () => {
+    if (onDelete) {
+      onDelete(message.id);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
+  // Memoize markdown components to prevent re-rendering
+  const markdownComponents = useMemo(() => ({
+    // Enhanced code blocks with syntax highlighting appearance
+    code({node, className, children, ...props}: {
+      node?: unknown;
+      className?: string;
+      children?: React.ReactNode;
+      [key: string]: unknown;
+    }) {
+      const isInlineCode = !className;
+      const language = className?.replace('language-', '') || '';
+      const codeContent = String(children).replace(/\n$/, '');
+      
+      return isInlineCode ? (
+        <code className="bg-black/20 dark:bg-white/20 px-1.5 py-0.5 rounded text-xs font-mono border" {...props}>
+          {children}
+        </code>
+      ) : (
+        <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4 my-3 font-mono text-sm overflow-auto border relative group">
+          <div className="flex justify-between items-center mb-2">
+            {language && (
+              <div className="text-gray-400 text-xs uppercase tracking-wide">
+                {language}
+              </div>
+            )}
+            <CopyButton text={codeContent} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <code className="text-gray-100 dark:text-gray-200" {...props}>
+            {children}
+          </code>
+        </div>
+      )
+    },
+    // Remove table rendering - convert to plain text format
+    table: ({children}: {children?: React.ReactNode}) => (
+      <div className="my-4 p-3 bg-muted rounded-md font-mono text-sm whitespace-pre-wrap">
+        {children}
+      </div>
+    ),
+    thead: ({children}: {children?: React.ReactNode}) => <div>{children}</div>,
+    tbody: ({children}: {children?: React.ReactNode}) => <div>{children}</div>,
+    tr: ({children}: {children?: React.ReactNode}) => (
+      <div className="block">
+        {children}
+      </div>
+    ),
+    th: ({children}: {children?: React.ReactNode}) => (
+      <span className="font-bold mr-4">
+        {children}
+      </span>
+    ),
+    td: ({children}: {children?: React.ReactNode}) => (
+      <span className="mr-4">
+        {children}
+      </span>
+    ),
+    h1: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h1 className="text-2xl font-bold my-4 text-foreground border-b pb-2" {...props} />,
+    h2: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h2 className="text-xl font-bold my-3 text-foreground" {...props} />,
+    h3: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h3 className="text-lg font-bold my-3 text-foreground" {...props} />,
+    h4: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h4 className="text-md font-bold my-2 text-foreground" {...props} />,
+    h5: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h5 className="text-sm font-bold my-2 text-foreground" {...props} />,
+    h6: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h6 className="text-xs font-bold my-2 text-foreground" {...props} />,
+    p: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <p className="my-2 leading-relaxed" {...props} />,
+    ul: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <ul className="list-disc ml-6 my-2 space-y-1" {...props} />,
+    ol: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <ol className="list-decimal ml-6 my-2 space-y-1" {...props} />,
+    li: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <li className="my-1" {...props} />,
+    a: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => (
+      <a 
+        className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        {...props} 
+      />
+    ),
+    blockquote: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => (
+      <blockquote className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 pl-4 py-2 my-3 italic rounded-r-md" {...props} />
+    ),
+    hr: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <hr className="my-6 border-border" {...props} />,
+    em: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <em className="italic text-foreground" {...props} />,
+    strong: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <strong className="font-bold text-foreground" {...props} />,
+    del: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <del className="line-through text-muted-foreground" {...props} />,
+    pre: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <pre className="whitespace-pre-wrap" {...props} />,
+  }), []);
 
   return (
     <div className={cn(
@@ -43,102 +175,60 @@ export function MessageItem({ message, onRegenerate, isLastMessage }: MessageIte
           )}
         </div>
         <div className="text-sm markdown-content">
-          {isUser ? (
+          {isEditing ? (
+            <div className="space-y-2">
+              <Textarea
+                ref={textareaRef}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="min-h-[100px] resize-none"
+                placeholder="Edit your message..."
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  className="h-7"
+                >
+                  <Check size={14} className="mr-1" />
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  className="h-7"
+                >
+                  <X size={14} className="mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : isUser ? (
             <span>{message.content}</span>
           ) : (
             <ReactMarkdown 
               className="prose dark:prose-invert prose-sm max-w-none"
-              components={{
-                // Enhanced code blocks with syntax highlighting appearance
-                code({node, className, children, ...props}) {
-                  const isInlineCode = !className;
-                  const language = className?.replace('language-', '') || '';
-                  const codeContent = String(children).replace(/\n$/, '');
-                  
-                  return isInlineCode ? (
-                    <code className="bg-black/20 dark:bg-white/20 px-1.5 py-0.5 rounded text-xs font-mono border" {...props}>
-                      {children}
-                    </code>
-                  ) : (
-                    <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4 my-3 font-mono text-sm overflow-auto border relative group">
-                      <div className="flex justify-between items-center mb-2">
-                        {language && (
-                          <div className="text-gray-400 text-xs uppercase tracking-wide">
-                            {language}
-                          </div>
-                        )}
-                        <CopyButton text={codeContent} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <code className="text-gray-100 dark:text-gray-200" {...props}>
-                        {children}
-                      </code>
-                    </div>
-                  )
-                },
-                // Remove table rendering - convert to plain text format
-                table: ({children}) => {
-                  // Convert table to a simple div with monospace font
-                  return (
-                    <div className="my-4 p-3 bg-muted rounded-md font-mono text-sm whitespace-pre-wrap">
-                      {children}
-                    </div>
-                  );
-                },
-                thead: ({children}) => <div>{children}</div>,
-                tbody: ({children}) => <div>{children}</div>,
-                tr: ({children}) => (
-                  <div className="block">
-                    {children}
-                  </div>
-                ),
-                th: ({children}) => (
-                  <span className="font-bold mr-4">
-                    {children}
-                  </span>
-                ),
-                td: ({children}) => (
-                  <span className="mr-4">
-                    {children}
-                  </span>
-                ),
-                h1: ({node, ...props}) => <h1 className="text-2xl font-bold my-4 text-foreground border-b pb-2" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-xl font-bold my-3 text-foreground" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-lg font-bold my-3 text-foreground" {...props} />,
-                h4: ({node, ...props}) => <h4 className="text-md font-bold my-2 text-foreground" {...props} />,
-                h5: ({node, ...props}) => <h5 className="text-sm font-bold my-2 text-foreground" {...props} />,
-                h6: ({node, ...props}) => <h6 className="text-xs font-bold my-2 text-foreground" {...props} />,
-                p: ({node, ...props}) => <p className="my-2 leading-relaxed" {...props} />,
-                ul: ({node, ...props}) => <ul className="list-disc ml-6 my-2 space-y-1" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal ml-6 my-2 space-y-1" {...props} />,
-                li: ({node, ...props}) => <li className="my-1" {...props} />,
-                a: ({node, ...props}) => (
-                  <a 
-                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    {...props} 
-                  />
-                ),
-                blockquote: ({node, ...props}) => (
-                  <blockquote className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 pl-4 py-2 my-3 italic rounded-r-md" {...props} />
-                ),
-                hr: ({node, ...props}) => <hr className="my-6 border-border" {...props} />,
-                em: ({node, ...props}) => <em className="italic text-foreground" {...props} />,
-                strong: ({node, ...props}) => <strong className="font-bold text-foreground" {...props} />,
-                del: ({node, ...props}) => <del className="line-through text-muted-foreground" {...props} />,
-                pre: ({node, ...props}) => <pre className="whitespace-pre-wrap" {...props} />,
-              }}
+              components={markdownComponents}
             >
               {message.content}
             </ReactMarkdown>
           )}
         </div>
-        <MessageActions 
-          message={message} 
-          onRegenerate={onRegenerate}
-          isLastMessage={isLastMessage}
-        />
+        {!isEditing && (
+          <MessageActions 
+            message={message} 
+            onRegenerate={onRegenerate}
+            onEdit={handleEdit}
+            onDelete={handleDeleteMessage}
+            isLastMessage={isLastMessage}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const MessageItem = memo(MessageItemComponent);

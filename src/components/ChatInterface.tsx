@@ -362,6 +362,40 @@ export function ChatInterface() {
     setInputValue(value);
   };
 
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    const updatedMessages = messages.map(msg => 
+      msg.id === messageId ? { ...msg, content: newContent } : msg
+    );
+    setMessages(updatedMessages);
+    
+    // Save updated conversation
+    if (currentConversationId) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversationId);
+      if (conversation) {
+        saveConversation(conversation, updatedMessages);
+      }
+    }
+    
+    toast.success("Message updated");
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    const updatedMessages = messages.filter(msg => msg.id !== messageId);
+    setMessages(updatedMessages);
+    
+    // Save updated conversation
+    if (currentConversationId) {
+      const conversations = getConversations();
+      const conversation = conversations.find(c => c.id === currentConversationId);
+      if (conversation) {
+        saveConversation(conversation, updatedMessages);
+      }
+    }
+    
+    toast.success("Message deleted");
+  };
+
   const handleProviderChange = (provider: string) => {
     console.log(`Changing provider to: ${provider}`);
     setSelectedProvider(provider);
@@ -383,7 +417,27 @@ export function ChatInterface() {
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">
       {/* Fixed Header */}
       <header className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
-        <h2 className="text-lg font-medium">Chat</h2>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <MessagesSquare size={20} className="text-primary flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-medium truncate">
+              {currentConversationId ? (
+                (() => {
+                  const conversations = getConversations();
+                  const current = conversations.find(c => c.id === currentConversationId);
+                  return current?.title || "Untitled Conversation";
+                })()
+              ) : (
+                "New Chat"
+              )}
+            </h2>
+            {messages.length > 0 && (
+              <p className="text-sm text-muted-foreground truncate">
+                {messages.length} message{messages.length !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        </div>
         
         <div className="flex items-center gap-2">
           <div className={`w-40 ${isMobile ? 'hidden sm:block' : ''}`}>
@@ -438,6 +492,8 @@ export function ChatInterface() {
               key={message.id} 
               message={message} 
               onRegenerate={handleRegenerateResponse}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
               isLastMessage={index === messages.length - 1}
             />
           ))
