@@ -392,12 +392,15 @@ export const importConversations = async (file: File, options: { merge: boolean 
         continue;
       }
       
-      // Import conversation
+      // Import conversation with proper title preservation
       const conversation: Conversation = {
-        ...conv,
+        id: conv.id,
+        title: conv.title || 'New Chat', // Ensure title is preserved
         createdAt: new Date(conv.createdAt),
         updatedAt: new Date(conv.updatedAt)
       };
+      
+      console.log('Importing conversation:', conversation.title, 'ID:', conversation.id);
       
       existingConversations.push(conversation);
       

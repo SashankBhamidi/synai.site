@@ -123,6 +123,17 @@
   .mobile-nav {
     @apply block;
   }
+  
+  /* Ensure proper mobile viewport height */
+  body {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+  
+  /* Fix mobile layout issues */
+  .mobile-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* Enhance loading animation */

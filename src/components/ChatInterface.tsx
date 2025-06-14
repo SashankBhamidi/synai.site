@@ -117,6 +117,11 @@ export function ChatInterface() {
           setCurrentConversationId(null);
           setMessages([]);
         }
+        
+        // Reset scroll position
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = 0;
+        }
       }
     };
 
@@ -124,6 +129,11 @@ export function ChatInterface() {
       console.log('All conversations cleared');
       setCurrentConversationId(null);
       setMessages([]);
+      
+      // Reset scroll position
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = 0;
+      }
     };
 
     // Add event listeners
@@ -365,6 +375,11 @@ export function ChatInterface() {
     // Reset to no conversation state
     setCurrentConversationId(null);
     
+    // Force scroll to reset by scrolling to top
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+    
     toast.success("Chat cleared");
   };
 
@@ -436,9 +451,9 @@ export function ChatInterface() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden relative">
       {/* Fixed Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
+      <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10 min-h-[60px] sm:min-h-[72px]">
         <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
           <MessagesSquare size={16} className="text-primary flex-shrink-0 sm:w-5 sm:h-5" />
           <div className="min-w-0 flex-1">
@@ -552,7 +567,7 @@ export function ChatInterface() {
       </div>
       
       {/* Fixed Footer */}
-      <div className="flex-shrink-0 p-3 sm:p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10">
+      <div className="flex-shrink-0 p-2 sm:p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 min-h-[80px] sm:min-h-[100px]">
         <ChatInput 
           onSendMessage={handleSendMessage} 
           isLoading={isLoading} 
