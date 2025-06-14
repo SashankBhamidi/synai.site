@@ -14,7 +14,7 @@ import { UsageAnalytics } from "./UsageAnalytics";
 import { SuggestionPrompts } from "./SuggestionPrompts";
 import { QuickActions } from "./QuickActions";
 import { ThemeCustomizer } from "./ThemeCustomizer";
-import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
+import { getDefaultModel, getDefaultModelForProvider, availableModels } from "@/data/models";
 import { recordMessage } from "@/utils/usageAnalytics";
 import { Button } from "@/components/ui/button";
 import { Trash2, MessagesSquare } from "lucide-react";
