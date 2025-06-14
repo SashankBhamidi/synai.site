@@ -79,10 +79,10 @@ export const modelsByProvider: ModelGroup[] = [
       },
       {
         id: "claude-3-5-sonnet-latest",
-        name: "Claude Sonnet 3.5 (Latest)",
+        name: "Claude Sonnet 3.5 v3",
         provider: "Anthropic",
         category: "Claude 3.5",
-        description: "Latest Claude 3.5 Sonnet with improved capabilities",
+        description: "Updated Claude 3.5 Sonnet with improved capabilities",
       },
       {
         id: "claude-3-5-sonnet-20240620",
@@ -100,10 +100,10 @@ export const modelsByProvider: ModelGroup[] = [
       },
       {
         id: "claude-3-5-haiku-latest",
-        name: "Claude Haiku 3.5 (Latest)",
+        name: "Claude Haiku 3.5 v2",
         provider: "Anthropic",
         category: "Claude 3.5",
-        description: "Latest Haiku 3.5, better reasoning while still fast",
+        description: "Updated Haiku 3.5, better reasoning while still fast",
       },
     ],
   },

@@ -179,34 +179,50 @@ export function ThemeCustomizer() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Palette size={18} />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full relative group hover:bg-accent transition-colors"
+        >
+          <Palette size={18} className="group-hover:scale-110 transition-transform" />
           <span className="sr-only">Customize Theme</span>
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Palette size={20} />
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden border-2 shadow-2xl">
+        <DialogHeader className="pb-6 border-b bg-gradient-to-r from-primary/5 to-primary/10 -m-6 mb-6 p-6 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Palette size={24} className="text-primary" />
+            </div>
             Theme Customization
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Personalize the appearance and feel of the interface
+          <p className="text-muted-foreground mt-2 ml-14">
+            Personalize every aspect of your interface - colors, fonts, spacing, and behavior
           </p>
         </DialogHeader>
         
         <Tabs defaultValue="appearance" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="typography">Typography</TabsTrigger>
-            <TabsTrigger value="behavior">Behavior</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
+            <TabsTrigger value="appearance" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Monitor size={16} />
+              Appearance
+            </TabsTrigger>
+            <TabsTrigger value="typography" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Type size={16} />
+              Typography
+            </TabsTrigger>
+            <TabsTrigger value="behavior" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Sparkles size={16} />
+              Behavior
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="appearance" className="overflow-y-auto max-h-[60vh] space-y-6">
+          <TabsContent value="appearance" className="overflow-y-auto max-h-[60vh] space-y-8 p-1">
             {/* Color Scheme */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <Monitor size={16} />
+            <div className="space-y-4 p-4 bg-card rounded-lg border">
+              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
+                <Monitor size={18} />
                 Color Scheme
               </Label>
               <div className="grid grid-cols-3 gap-2">
@@ -234,8 +250,11 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Accent Color */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Accent Color</Label>
+            <div className="space-y-4 p-4 bg-card rounded-lg border">
+              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
+                <Palette size={18} />
+                Accent Color
+              </Label>
               <div className="grid grid-cols-4 gap-2">
                 {accentColors.map(color => (
                   <Button
@@ -256,8 +275,11 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Border Radius */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Border Radius</Label>
+            <div className="space-y-4 p-4 bg-card rounded-lg border">
+              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
+                <div className="w-4 h-4 border-2 border-primary rounded" />
+                Border Radius
+              </Label>
               <div className="px-3">
                 <Slider
                   value={[settings.borderRadius]}
@@ -276,9 +298,9 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Density */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <Layers size={16} />
+            <div className="space-y-4 p-4 bg-card rounded-lg border">
+              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
+                <Layers size={18} />
                 Interface Density
               </Label>
               <div className="grid grid-cols-3 gap-2">

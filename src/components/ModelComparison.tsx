@@ -57,12 +57,74 @@ interface ComparisonMetrics {
   accuracy: number;
 }
 
+const promptTemplates = [
+  {
+    name: "General Chat",
+    prompt: "Hello! How can you help me today?",
+    description: "Test basic conversational ability"
+  },
+  {
+    name: "Code Review",
+    prompt: "Review this Python function and suggest improvements:\n\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)",
+    description: "Test coding analysis and optimization skills"
+  },
+  {
+    name: "Creative Writing",
+    prompt: "Write a short story about a robot who discovers they can dream. Make it emotional and thought-provoking.",
+    description: "Test creative and narrative abilities"
+  },
+  {
+    name: "Problem Solving",
+    prompt: "A farmer has 17 sheep, and all but 9 die. How many sheep are left? Explain your reasoning step by step.",
+    description: "Test logical reasoning and problem-solving"
+  },
+  {
+    name: "Research & Analysis",
+    prompt: "Compare the advantages and disadvantages of renewable energy sources like solar, wind, and hydroelectric power.",
+    description: "Test research and analytical thinking"
+  },
+  {
+    name: "Technical Explanation",
+    prompt: "Explain how machine learning works to a 10-year-old, using simple analogies they can understand.",
+    description: "Test ability to simplify complex concepts"
+  }
+];
+
+const modelPresets = {
+  coding: {
+    name: "Best Coding Models",
+    description: "Top models for programming, code review, and technical tasks",
+    modelIds: ["gpt-4o", "claude-sonnet-4-20250514", "o1", "claude-3-5-sonnet-20241022"]
+  },
+  research: {
+    name: "Best Research Models",
+    description: "Optimal for analysis, research, and comprehensive responses",
+    modelIds: ["sonar-deep-research", "sonar-pro", "claude-opus-4-20250514", "o1"]
+  },
+  general: {
+    name: "Best General Models",
+    description: "Well-rounded models for everyday tasks and conversations",
+    modelIds: ["claude-sonnet-4-20250514", "gpt-4o", "claude-3-5-sonnet-20241022", "sonar-pro"]
+  },
+  creative: {
+    name: "Best Creative Models",
+    description: "Excellent for creative writing, storytelling, and ideation",
+    modelIds: ["claude-opus-4-20250514", "gpt-4", "claude-3-5-sonnet-20241022", "gpt-4-turbo"]
+  },
+  reasoning: {
+    name: "Best Reasoning Models",
+    description: "Top performers for logic, math, and complex problem-solving",
+    modelIds: ["o1", "o1-mini", "sonar-reasoning-pro", "claude-sonnet-4-20250514"]
+  }
+};
+
 export function ModelComparison() {
   const [selectedModels, setSelectedModels] = useState<AIModel[]>([]);
   const [prompt, setPrompt] = useState("");
   const [responses, setResponses] = useState<ModelResponse[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [metrics, setMetrics] = useState<Record<string, ComparisonMetrics>>({});
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   const handleAddModel = (modelId: string) => {
     const model = availableModels.find(m => m.id === modelId);
@@ -73,6 +135,49 @@ export function ModelComparison() {
 
   const handleRemoveModel = (modelId: string) => {
     setSelectedModels(selectedModels.filter(m => m.id !== modelId));
+  };
+
+  const handleSelectAll = () => {
+    setSelectedModels([...availableModels]);
+  };
+
+  const handleSelectProvider = (provider: string) => {
+    const providerModels = availableModels.filter(m => m.provider === provider);
+    const newModels = [...selectedModels];
+    providerModels.forEach(model => {
+      if (!newModels.find(m => m.id === model.id)) {
+        newModels.push(model);
+      }
+    });
+    setSelectedModels(newModels);
+  };
+
+  const handleSelectCategory = (category: string) => {
+    const categoryModels = availableModels.filter(m => m.category === category);
+    const newModels = [...selectedModels];
+    categoryModels.forEach(model => {
+      if (!newModels.find(m => m.id === model.id)) {
+        newModels.push(model);
+      }
+    });
+    setSelectedModels(newModels);
+  };
+
+  const handleSelectPreset = (presetKey: string) => {
+    const preset = modelPresets[presetKey as keyof typeof modelPresets];
+    if (preset) {
+      const presetModels = availableModels.filter(m => preset.modelIds.includes(m.id));
+      setSelectedModels(presetModels);
+    }
+  };
+
+  const handleClearAll = () => {
+    setSelectedModels([]);
+  };
+
+  const handleUseTemplate = (template: string) => {
+    setPrompt(template);
+    setSelectedTemplate("");
   };
 
   const runComparison = async () => {
@@ -242,9 +347,76 @@ export function ModelComparison() {
           {/* Setup Section */}
           <div className="space-y-4 p-4 border-b">
             {/* Model Selection */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select Models to Compare</label>
-              <div className="flex flex-wrap gap-2 mb-2">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Select Models to Compare</label>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                    Select All
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleClearAll} disabled={selectedModels.length === 0}>
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Quick Selection Presets */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">Quick Presets</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(modelPresets).map(([key, preset]) => (
+                    <Button
+                      key={key}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSelectPreset(key)}
+                      className="text-xs h-auto py-2 px-3 flex flex-col items-start"
+                    >
+                      <span className="font-medium">{preset.name}</span>
+                      <span className="text-muted-foreground text-[10px] leading-tight">{preset.description}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Bulk Selection by Provider/Category */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-1 block">By Provider</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {['OpenAI', 'Anthropic', 'Perplexity'].map(provider => (
+                      <Button
+                        key={provider}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSelectProvider(provider)}
+                        className="text-xs h-7"
+                      >
+                        + {provider}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-1 block">By Category</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {['GPT-4', 'Claude 4', 'Claude 3.5', 'Reasoning', 'Search'].map(category => (
+                      <Button
+                        key={category}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSelectCategory(category)}
+                        className="text-xs h-7"
+                      >
+                        + {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Selected Models Display */}
+              <div className="flex flex-wrap gap-2">
                 {selectedModels.map(model => (
                   <Badge 
                     key={model.id}
@@ -262,9 +434,11 @@ export function ModelComparison() {
                   </Badge>
                 ))}
               </div>
+              
+              {/* Individual Model Selection */}
               <Select onValueChange={handleAddModel}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Add a model..." />
+                  <SelectValue placeholder="Add individual models..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableModels
@@ -287,13 +461,50 @@ export function ModelComparison() {
             </div>
 
             {/* Prompt Input */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Test Prompt</label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Test Prompt</label>
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Use template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {promptTemplates.map((template, index) => (
+                      <SelectItem key={index} value={template.prompt}>
+                        <div className="text-left">
+                          <div className="font-medium">{template.name}</div>
+                          <div className="text-xs text-muted-foreground">{template.description}</div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {selectedTemplate && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUseTemplate(selectedTemplate)}
+                  >
+                    Use Template
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedTemplate("")}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              
               <Textarea
                 placeholder="Enter a prompt to test with all selected models..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
