@@ -206,19 +206,26 @@ export function ChatInterface() {
     if (!enableMemory) {
       // Only send the current message without context
       const lastMessage = messages[messages.length - 1];
-      return lastMessage ? [{
+      if (!lastMessage) return [];
+      
+      const content = typeof lastMessage.content === 'string' ? lastMessage.content : String(lastMessage.content || '');
+      return [{
         role: lastMessage.role === 'assistant' ? 'assistant' as const : 'user' as const,
-        content: lastMessage.content
-      }] : [];
+        content
+      }];
     }
     
     // Convert all messages to API format, preserving conversation context
     const apiMessages = messages
       .filter(msg => msg.role !== 'system') // Only filter out system messages (errors)
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
-        content: msg.content
-      }));
+      .map(msg => {
+        // Ensure content is always a string
+        const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+        return {
+          role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+          content
+        };
+      });
     
     console.log('Converting messages to API format:', {
       originalCount: messages.length,
@@ -287,7 +294,8 @@ export function ChatInterface() {
         model: selectedModel.id,
         messageCount: apiMessages.length,
         temperature,
-        memoryEnabled: enableMemory
+        memoryEnabled: enableMemory,
+        apiMessages // Debug: log the actual messages being sent
       });
       
       const requestOptions = {
@@ -470,69 +478,113 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden relative">
       {/* Fixed Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10 min-h-[60px] sm:min-h-[72px]">
-        <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
-          <MessagesSquare size={16} className="text-primary flex-shrink-0 sm:w-5 sm:h-5" />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm sm:text-lg font-medium truncate">
-              {currentConversationId ? (
-                (() => {
-                  const conversations = getConversations();
-                  const current = conversations.find(c => c.id === currentConversationId);
-                  return current?.title || "Untitled Conversation";
-                })()
-              ) : (
-                "New Chat"
-              )}
-            </h2>
-            {messages.length > 0 && (
-              <p className="text-xs text-muted-foreground truncate hidden sm:block">
-                {messages.length} message{messages.length !== 1 ? 's' : ''}
-              </p>
-            )}
+      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
+        {/* Mobile Header - Simplified */}
+        <div className="sm:hidden">
+          <div className="flex items-center justify-between p-2 min-h-[48px]">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <MessagesSquare size={16} className="text-primary flex-shrink-0" />
+              <h2 className="text-sm font-medium truncate">
+                {currentConversationId ? (
+                  (() => {
+                    const conversations = getConversations();
+                    const current = conversations.find(c => c.id === currentConversationId);
+                    return current?.title || "Untitled Conversation";
+                  })()
+                ) : (
+                  "New Chat"
+                )}
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleClearChat}
+                className="rounded-full h-7 w-7"
+                title="Clear chat"
+              >
+                <Trash2 size={12} />
+              </Button>
+              <SettingsDialog />
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-1 overflow-x-auto">
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <div className="w-20 sm:w-32 lg:w-40">
+          
+          {/* Mobile Second Row - Model Selection */}
+          <div className="flex items-center gap-2 px-2 pb-2">
+            <div className="flex-1">
               <ProviderSelector 
                 selectedProvider={selectedProvider}
                 onSelectProvider={handleProviderChange}
               />
             </div>
-            
-            <div className="w-20 sm:w-32 lg:w-40">
+            <div className="flex-1">
               <ModelSelector 
                 selectedModel={selectedModel}
                 onSelectModel={setSelectedModel}
               />
             </div>
           </div>
+        </div>
+        
+        {/* Desktop Header */}
+        <div className="hidden sm:flex items-center justify-between p-4 min-h-[72px]">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <MessagesSquare size={20} className="text-primary flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-medium truncate">
+                {currentConversationId ? (
+                  (() => {
+                    const conversations = getConversations();
+                    const current = conversations.find(c => c.id === currentConversationId);
+                    return current?.title || "Untitled Conversation";
+                  })()
+                ) : (
+                  "New Chat"
+                )}
+              </h2>
+              {messages.length > 0 && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {messages.length} message{messages.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
           
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleClearChat}
-              className="rounded-full h-7 w-7 sm:h-8 sm:w-8"
-              title="Clear chat"
-            >
-              <Trash2 size={12} className="sm:w-4 sm:h-4" />
-              <span className="sr-only">Clear chat</span>
-            </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-32 lg:w-40">
+                <ProviderSelector 
+                  selectedProvider={selectedProvider}
+                  onSelectProvider={handleProviderChange}
+                />
+              </div>
+              
+              <div className="w-32 lg:w-40">
+                <ModelSelector 
+                  selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
+                />
+              </div>
+            </div>
             
-            <div className="hidden sm:flex items-center gap-1">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleClearChat}
+                className="rounded-full h-8 w-8"
+                title="Clear chat"
+              >
+                <Trash2 size={14} />
+              </Button>
+              
               <UsageAnalytics />
               <ModelComparison />
               <HelpDialog />
               <SettingsDialog />
               <ThemeToggle />
-            </div>
-            
-            {/* Mobile menu for settings */}
-            <div className="sm:hidden">
-              <SettingsDialog />
             </div>
           </div>
         </div>
@@ -586,26 +638,32 @@ export function ChatInterface() {
       </div>
       
       {/* Fixed Footer */}
-      <div className="flex-shrink-0 p-2 sm:p-4 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 min-h-[80px] sm:min-h-[100px]">
-        <ChatInput 
-          onSendMessage={handleSendMessage} 
-          isLoading={isLoading} 
-          value={inputValue}
-          onChange={handleInputChange}
-        />
-        <div className="mt-2 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-xs">
-          <div className="text-muted-foreground flex flex-wrap items-center gap-1">
-            <span className="hidden sm:inline">Model: {selectedModel.name} ({selectedModel.provider})</span>
-            <span className="sm:hidden">{selectedModel.name}</span>
-            {getConfiguredProviders().length === 0 && (
-              <span className="text-yellow-500">(Simulated)</span>
-            )}
-            {!enableMemory && (
-              <span className="text-orange-500">(No memory)</span>
-            )}
-          </div>
-          <div className="text-muted-foreground">
-            <span className="opacity-70">Powered by <a href="https://cygenhost.com" target="_blank" rel="noopener noreferrer" className="hover:underline">Cygen Host</a></span>
+      <div className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10">
+        <div className="p-2 sm:p-4">
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            isLoading={isLoading} 
+            value={inputValue}
+            onChange={handleInputChange}
+          />
+        </div>
+        
+        {/* Footer Info - Mobile Optimized */}
+        <div className="px-2 pb-2 sm:px-4 sm:pb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-xs">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-1">
+              <span className="hidden sm:inline">Model: {selectedModel.name} ({selectedModel.provider})</span>
+              <span className="sm:hidden">{selectedModel.name}</span>
+              {getConfiguredProviders().length === 0 && (
+                <span className="text-yellow-500">(Simulated)</span>
+              )}
+              {!enableMemory && (
+                <span className="text-orange-500">(No memory)</span>
+              )}
+            </div>
+            <div className="text-muted-foreground hidden sm:block">
+              <span className="opacity-70">Powered by <a href="https://cygenhost.com" target="_blank" rel="noopener noreferrer" className="hover:underline">Cygen Host</a></span>
+            </div>
           </div>
         </div>
       </div>

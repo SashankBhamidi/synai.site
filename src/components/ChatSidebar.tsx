@@ -240,18 +240,24 @@ export function ChatSidebar() {
   const filteredConversations = React.useMemo(() => {
     let filtered = conversations;
     
+    // Apply search filter if query exists
     if (searchQuery.trim()) {
-      filtered = searchConversations(searchQuery);
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = conversations.filter(conv => 
+        conv.title.toLowerCase().includes(lowerQuery) ||
+        conv.id.includes(lowerQuery)
+      );
     }
     
-    // Sort conversations
+    // Apply sorting
+    const sorted = [...filtered]; // Create a copy to avoid mutating original array
     if (sortBy === 'name') {
-      filtered.sort((a, b) => a.title.localeCompare(b.title));
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
     } else {
-      filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      sorted.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     }
     
-    return filtered;
+    return sorted;
   }, [conversations, searchQuery, sortBy]);
 
   const handleNewChat = () => {

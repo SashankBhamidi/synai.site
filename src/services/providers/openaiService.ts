@@ -25,7 +25,14 @@ export class OpenAIService extends BaseProviderService {
         }
       ];
       
-      console.log('Sending to OpenAI with messages:', openaiMessages);
+      console.log('Sending to OpenAI with messages:', JSON.stringify(openaiMessages, null, 2));
+      
+      // Validate message format before sending
+      openaiMessages.forEach((msg, index) => {
+        if (typeof msg.content !== 'string') {
+          console.error(`Message ${index} has invalid content type:`, typeof msg.content, msg.content);
+        }
+      });
       
       // Add a small delay to prevent identical responses on regeneration
       if (options.messages && options.messages.length > 1) {
