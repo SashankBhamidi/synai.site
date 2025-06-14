@@ -1,4 +1,4 @@
-import { Conversation, Message, AIModel } from "@/types";
+import { Conversation, Message, AIModel, ConversationFolder } from "@/types";
 
 // Storage keys
 const CONVERSATIONS_KEY = 'synthesis-ai-conversations';
@@ -488,8 +488,163 @@ export const searchConversations = (query: string): Conversation[] => {
   
   return conversations.filter(conv => 
     conv.title.toLowerCase().includes(lowerQuery) ||
-    conv.id.includes(lowerQuery)
+    conv.id.includes(lowerQuery) ||
+    conv.description?.toLowerCase().includes(lowerQuery) ||
+    conv.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
   );
+};
+
+/**
+ * Toggle conversation favorite status
+ */
+export const toggleConversationFavorite = (conversationId: string): void => {
+  try {
+    const conversations = getConversations();
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation) {
+      conversation.isFavorite = !conversation.isFavorite;
+      conversation.updatedAt = new Date();
+      
+      localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
+      dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED, conversationId, conversation);
+      console.log(`Toggled favorite for conversation ${conversationId}: ${conversation.isFavorite}`);
+    }
+  } catch (error) {
+    console.error('Error toggling conversation favorite:', error);
+  }
+};
+
+/**
+ * Toggle conversation pinned status
+ */
+export const toggleConversationPinned = (conversationId: string): void => {
+  try {
+    const conversations = getConversations();
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation) {
+      conversation.isPinned = !conversation.isPinned;
+      conversation.updatedAt = new Date();
+      
+      // Re-sort conversations to put pinned ones at the top
+      conversations.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+      
+      localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
+      dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED, conversationId, conversation);
+      console.log(`Toggled pinned for conversation ${conversationId}: ${conversation.isPinned}`);
+    }
+  } catch (error) {
+    console.error('Error toggling conversation pinned:', error);
+  }
+};
+
+/**
+ * Add tag to conversation
+ */
+export const addConversationTag = (conversationId: string, tag: string): void => {
+  try {
+    const conversations = getConversations();
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation) {
+      if (!conversation.tags) conversation.tags = [];
+      if (!conversation.tags.includes(tag)) {
+        conversation.tags.push(tag);
+        conversation.updatedAt = new Date();
+        
+        localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
+        dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED, conversationId, conversation);
+        console.log(`Added tag "${tag}" to conversation ${conversationId}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error adding conversation tag:', error);
+  }
+};
+
+/**
+ * Remove tag from conversation
+ */
+export const removeConversationTag = (conversationId: string, tag: string): void => {
+  try {
+    const conversations = getConversations();
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation && conversation.tags) {
+      conversation.tags = conversation.tags.filter(t => t !== tag);
+      conversation.updatedAt = new Date();
+      
+      localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
+      dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED, conversationId, conversation);
+      console.log(`Removed tag "${tag}" from conversation ${conversationId}`);
+    }
+  } catch (error) {
+    console.error('Error removing conversation tag:', error);
+  }
+};
+
+/**
+ * Move conversation to folder
+ */
+export const moveConversationToFolder = (conversationId: string, folderId?: string): void => {
+  try {
+    const conversations = getConversations();
+    const conversation = conversations.find(c => c.id === conversationId);
+    
+    if (conversation) {
+      conversation.folderId = folderId;
+      conversation.updatedAt = new Date();
+      
+      localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
+      dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED, conversationId, conversation);
+      console.log(`Moved conversation ${conversationId} to folder ${folderId || 'root'}`);
+    }
+  } catch (error) {
+    console.error('Error moving conversation to folder:', error);
+  }
+};
+
+/**
+ * Get conversations by folder
+ */
+export const getConversationsByFolder = (folderId?: string): Conversation[] => {
+  const conversations = getConversations();
+  return conversations.filter(conv => conv.folderId === folderId);
+};
+
+/**
+ * Get favorite conversations
+ */
+export const getFavoriteConversations = (): Conversation[] => {
+  const conversations = getConversations();
+  return conversations.filter(conv => conv.isFavorite);
+};
+
+/**
+ * Get all unique tags
+ */
+export const getAllTags = (): string[] => {
+  const conversations = getConversations();
+  const tags = new Set<string>();
+  
+  conversations.forEach(conv => {
+    conv.tags?.forEach(tag => tags.add(tag));
+  });
+  
+  return Array.from(tags).sort();
+};
+
+/**
+ * Get conversations by tag
+ */
+export const getConversationsByTag = (tag: string): Conversation[] => {
+  const conversations = getConversations();
+  return conversations.filter(conv => conv.tags?.includes(tag));
 };
 
 /**

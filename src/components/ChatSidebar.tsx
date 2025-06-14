@@ -42,10 +42,13 @@ import {
   Search,
   MoreHorizontal,
   Edit2,
-  Calendar
+  Calendar,
+  Folder,
+  Star,
+  Pin
 } from "lucide-react";
 import { toast } from "sonner";
-import { Conversation } from "@/types";
+import { Conversation, ConversationFolder } from "@/types";
 import { 
   getConversations,
   getCurrentConversation,
@@ -58,8 +61,24 @@ import {
   importConversations,
   searchConversations,
   getConversationStats,
+  toggleConversationFavorite,
+  toggleConversationPinned,
+  addConversationTag,
+  removeConversationTag,
+  moveConversationToFolder,
+  getConversationsByFolder,
+  getFavoriteConversations,
+  getAllTags,
   CONVERSATION_EVENTS
 } from "@/utils/conversationStorage";
+import { 
+  getFolders,
+  createFolder,
+  FOLDER_EVENTS
+} from "@/utils/folderStorage";
+import { ConversationFilters, FilterState } from "./ConversationFilters";
+import { EnhancedConversationItem } from "./EnhancedConversationItem";
+import { AdvancedSearch } from "./AdvancedSearch";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -188,9 +207,16 @@ function ConversationItem({ conversation, isActive, onSelect, onRename, onDelete
 
 export function ChatSidebar() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [folders, setFolders] = useState<ConversationFolder[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
+  const [filters, setFilters] = useState<FilterState>({
+    showFavorites: false,
+    showPinned: false,
+    selectedFolder: undefined,
+    selectedTags: [],
+    sortBy: 'date'
+  });
   const [stats, setStats] = useState({ totalConversations: 0, totalMessages: 0 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -198,15 +224,21 @@ export function ChatSidebar() {
   const [conflictResolution, setConflictResolution] = useState<'skip' | 'replace' | 'rename'>('skip');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load conversations and current conversation
+  // Load conversations, folders and current conversation
   useEffect(() => {
-    const loadConversations = () => {
+    const loadData = () => {
       const allConversations = getConversations();
+      const allFolders = getFolders();
       const currentId = getCurrentConversation();
       
-      console.log('Loading conversations:', { count: allConversations.length, currentId });
+      console.log('Loading data:', { 
+        conversations: allConversations.length, 
+        folders: allFolders.length,
+        currentId 
+      });
       
       setConversations(allConversations);
+      setFolders(allFolders);
       setCurrentConversationId(currentId);
       
       // Update stats
@@ -214,11 +246,16 @@ export function ChatSidebar() {
       setStats(newStats);
     };
 
-    loadConversations();
+    loadData();
 
     // Listen for conversation events
     const handleConversationEvent = () => {
-      loadConversations();
+      loadData();
+    };
+
+    // Listen for folder events
+    const handleFolderEvent = () => {
+      loadData();
     };
 
     window.addEventListener(CONVERSATION_EVENTS.CREATED, handleConversationEvent);
@@ -226,6 +263,10 @@ export function ChatSidebar() {
     window.addEventListener(CONVERSATION_EVENTS.DELETED, handleConversationEvent);
     window.addEventListener(CONVERSATION_EVENTS.SWITCHED, handleConversationEvent);
     window.addEventListener(CONVERSATION_EVENTS.CLEARED, handleConversationEvent);
+    
+    window.addEventListener(FOLDER_EVENTS.CREATED, handleFolderEvent);
+    window.addEventListener(FOLDER_EVENTS.UPDATED, handleFolderEvent);
+    window.addEventListener(FOLDER_EVENTS.DELETED, handleFolderEvent);
 
     return () => {
       window.removeEventListener(CONVERSATION_EVENTS.CREATED, handleConversationEvent);
@@ -233,32 +274,63 @@ export function ChatSidebar() {
       window.removeEventListener(CONVERSATION_EVENTS.DELETED, handleConversationEvent);
       window.removeEventListener(CONVERSATION_EVENTS.SWITCHED, handleConversationEvent);
       window.removeEventListener(CONVERSATION_EVENTS.CLEARED, handleConversationEvent);
+      
+      window.removeEventListener(FOLDER_EVENTS.CREATED, handleFolderEvent);
+      window.removeEventListener(FOLDER_EVENTS.UPDATED, handleFolderEvent);
+      window.removeEventListener(FOLDER_EVENTS.DELETED, handleFolderEvent);
     };
   }, []);
 
   // Filter and sort conversations
   const filteredConversations = React.useMemo(() => {
     let filtered = conversations;
-    
-    // Apply search filter if query exists
+
+    // Apply search filter
     if (searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = conversations.filter(conv => 
-        conv.title.toLowerCase().includes(lowerQuery) ||
-        conv.id.includes(lowerQuery)
+      filtered = searchConversations(searchQuery);
+    } else {
+      filtered = [...conversations];
+    }
+
+    // Apply filters
+    if (filters.showFavorites) {
+      filtered = filtered.filter(conv => conv.isFavorite);
+    }
+
+    if (filters.showPinned) {
+      filtered = filtered.filter(conv => conv.isPinned);
+    }
+
+    if (filters.selectedFolder !== undefined) {
+      filtered = filtered.filter(conv => conv.folderId === filters.selectedFolder);
+    }
+
+    if (filters.selectedTags.length > 0) {
+      filtered = filtered.filter(conv => 
+        conv.tags?.some(tag => filters.selectedTags.includes(tag))
       );
     }
-    
-    // Apply sorting
-    const sorted = [...filtered]; // Create a copy to avoid mutating original array
-    if (sortBy === 'name') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title));
+
+    // Sort conversations
+    if (filters.sortBy === 'name') {
+      filtered.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (filters.sortBy === 'favorites') {
+      filtered.sort((a, b) => {
+        if (a.isFavorite && !b.isFavorite) return -1;
+        if (!a.isFavorite && b.isFavorite) return 1;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
     } else {
-      sorted.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      // Sort by date (default) - pinned first, then most recent first
+      filtered.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
     }
-    
-    return sorted;
-  }, [conversations, searchQuery, sortBy]);
+
+    return filtered;
+  }, [conversations, searchQuery, filters]);
 
   const handleNewChat = () => {
     const newConversation = createConversation();
@@ -282,6 +354,40 @@ export function ChatSidebar() {
     const newCurrentId = deleteConversation(id);
     console.log('Deleted conversation:', id, 'new current:', newCurrentId);
     toast.success("Conversation deleted");
+  };
+
+  // New conversation management handlers
+  const handleToggleFavorite = (id: string) => {
+    toggleConversationFavorite(id);
+    const conversation = conversations.find(c => c.id === id);
+    toast.success(conversation?.isFavorite ? "Removed from favorites" : "Added to favorites");
+  };
+
+  const handleTogglePin = (id: string) => {
+    toggleConversationPinned(id);
+    const conversation = conversations.find(c => c.id === id);
+    toast.success(conversation?.isPinned ? "Unpinned" : "Pinned to top");
+  };
+
+  const handleMoveToFolder = (id: string, folderId?: string) => {
+    moveConversationToFolder(id, folderId);
+    const folderName = folderId ? folders.find(f => f.id === folderId)?.name : 'Root';
+    toast.success(`Moved to ${folderName}`);
+  };
+
+  const handleAddTag = (id: string, tag: string) => {
+    addConversationTag(id, tag);
+    toast.success(`Added tag: ${tag}`);
+  };
+
+  const handleRemoveTag = (id: string, tag: string) => {
+    removeConversationTag(id, tag);
+    toast.success(`Removed tag: ${tag}`);
+  };
+
+  const handleCreateFolder = (name: string) => {
+    createFolder(name);
+    toast.success(`Created folder: ${name}`);
   };
 
   const handleClearAll = () => {
@@ -392,13 +498,29 @@ export function ChatSidebar() {
         </div>
         
         {/* Search */}
-        <div className="mt-2 relative">
-          <Search size={14} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-8 text-sm"
+        <div className="mt-2 space-y-3">
+          <div className="relative">
+            <Search size={14} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          
+          <ConversationFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableTags={getAllTags()}
+            availableFolders={folders}
+          />
+          
+          <AdvancedSearch 
+            onSelectConversation={(conversation) => {
+              setCurrentConversation(conversation.id);
+              console.log('Selected conversation from advanced search:', conversation.id);
+            }}
           />
         </div>
       </SidebarHeader>
@@ -422,15 +544,20 @@ export function ChatSidebar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSortBy('date')}>
+                <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'date'})}>
                   <Calendar size={14} className="mr-2" />
                   Sort by Date
-                  {sortBy === 'date' && <span className="ml-auto">✓</span>}
+                  {filters.sortBy === 'date' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('name')}>
+                <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'name'})}>
                   <MessagesSquare size={14} className="mr-2" />
                   Sort by Name
-                  {sortBy === 'name' && <span className="ml-auto">✓</span>}
+                  {filters.sortBy === 'name' && <span className="ml-auto">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'favorites'})}>
+                  <Star size={14} className="mr-2" />
+                  Sort by Favorites
+                  {filters.sortBy === 'favorites' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExport}>
@@ -493,16 +620,30 @@ export function ChatSidebar() {
               </div>
             ) : (
               <div className="space-y-1">
-                {filteredConversations.map((conversation) => (
-                  <ConversationItem
-                    key={conversation.id}
-                    conversation={conversation}
-                    isActive={conversation.id === currentConversationId}
-                    onSelect={handleSelectConversation}
-                    onRename={handleRenameConversation}
-                    onDelete={handleDeleteConversation}
-                  />
-                ))}
+                {filteredConversations.map((conversation) => {
+                  const folderInfo = conversation.folderId 
+                    ? folders.find(f => f.id === conversation.folderId)
+                    : undefined;
+                  
+                  return (
+                    <EnhancedConversationItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      isActive={conversation.id === currentConversationId}
+                      onSelect={handleSelectConversation}
+                      onToggleFavorite={handleToggleFavorite}
+                      onTogglePin={handleTogglePin}
+                      onMoveToFolder={handleMoveToFolder}
+                      onAddTag={handleAddTag}
+                      onRemoveTag={handleRemoveTag}
+                      onRename={handleRenameConversation}
+                      onDelete={handleDeleteConversation}
+                      availableFolders={folders}
+                      availableTags={getAllTags()}
+                      folderInfo={folderInfo}
+                    />
+                  );
+                })}
               </div>
             )}
           </SidebarGroupContent>
