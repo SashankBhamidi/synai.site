@@ -144,7 +144,8 @@ export function UsageAnalytics() {
             </div>
           </div>
         ) : stats ? (
-          <div className="flex-1 space-y-4">
+          <ScrollArea className="flex-1">
+            <div className="space-y-4 pr-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 {stats.firstMessageDate && stats.lastMessageDate && (
@@ -183,7 +184,7 @@ export function UsageAnalytics() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 icon={MessageSquare}
                 title="Total Messages"
@@ -265,7 +266,8 @@ export function UsageAnalytics() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </ScrollArea>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-muted-foreground">

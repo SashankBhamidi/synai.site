@@ -36,8 +36,26 @@ import {
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel>(getDefaultModel());
-  const [selectedProvider, setSelectedProvider] = useState<string>(getDefaultModel().provider);
+  // Get last used model from localStorage or fallback to default
+  const getLastUsedModel = (): AIModel => {
+    const savedModel = localStorage.getItem('synthesis-last-used-model');
+    if (savedModel) {
+      try {
+        const parsedModel = JSON.parse(savedModel);
+        // Verify the model still exists in available models
+        const modelExists = availableModels.find(m => m.id === parsedModel.id && m.provider === parsedModel.provider);
+        if (modelExists) {
+          return parsedModel;
+        }
+      } catch (error) {
+        console.warn('Failed to parse saved model, using default');
+      }
+    }
+    return getDefaultModel();
+  };
+
+  const [selectedModel, setSelectedModel] = useState<AIModel>(getLastUsedModel());
+  const [selectedProvider, setSelectedProvider] = useState<string>(getLastUsedModel().provider);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -458,9 +476,25 @@ export function ChatInterface() {
     toast.success("Message deleted");
   };
 
+  const handleModelChange = (model: AIModel) => {
+    console.log(`Changing model to: ${model.name} from provider ${model.provider}`);
+    setSelectedModel(model);
+    setSelectedProvider(model.provider);
+    
+    // Save last used model to localStorage
+    localStorage.setItem('synthesis-last-used-model', JSON.stringify(model));
+  };
+
   const handleProviderChange = (provider: string) => {
     console.log(`Changing provider to: ${provider}`);
     setSelectedProvider(provider);
+    
+    // When provider changes, update to the default model for that provider
+    const defaultModelForProvider = getDefaultModelForProvider(provider);
+    setSelectedModel(defaultModelForProvider);
+    
+    // Save last used model to localStorage
+    localStorage.setItem('synthesis-last-used-model', JSON.stringify(defaultModelForProvider));
   };
 
   // We're no longer using keyboard shortcuts
@@ -522,7 +556,7 @@ export function ChatInterface() {
             <div className="flex-1">
               <ModelSelector 
                 selectedModel={selectedModel}
-                onSelectModel={setSelectedModel}
+                onSelectModel={handleModelChange}
               />
             </div>
           </div>
@@ -564,7 +598,7 @@ export function ChatInterface() {
               <div className="w-32 lg:w-40">
                 <ModelSelector 
                   selectedModel={selectedModel}
-                  onSelectModel={setSelectedModel}
+                  onSelectModel={handleModelChange}
                 />
               </div>
             </div>
