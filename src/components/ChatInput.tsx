@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SendIcon, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
+import { QuickActionsDropdown } from "./QuickActions";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -177,6 +178,24 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           }}
         />
         <div className="flex gap-2 flex-shrink-0">
+          <QuickActionsDropdown 
+            onSelectAction={(prompt) => {
+              if (isControlled && onChange) {
+                onChange(prompt + " ");
+              } else {
+                setInput(prompt + " ");
+              }
+              // Focus the textarea after selecting an action
+              setTimeout(() => {
+                if (textareaRef.current) {
+                  textareaRef.current.focus();
+                  // Move cursor to end
+                  const len = textareaRef.current.value.length;
+                  textareaRef.current.setSelectionRange(len, len);
+                }
+              }, 100);
+            }}
+          />
           <Button
             type="button"
             size="icon"

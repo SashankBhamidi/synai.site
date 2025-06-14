@@ -13,6 +13,9 @@ import { WelcomeTooltip } from "./WelcomeTooltip";
 import { ModelComparison } from "./ModelComparison";
 import { UsageAnalytics } from "./UsageAnalytics";
 import { SuggestionPrompts } from "./SuggestionPrompts";
+import { QuickActions } from "./QuickActions";
+import { ConversationHistory } from "./ConversationHistory";
+import { ThemeCustomizer } from "./ThemeCustomizer";
 import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
 import { recordMessage } from "@/utils/usageAnalytics";
 import { Button } from "@/components/ui/button";
@@ -623,6 +626,7 @@ export function ChatInterface() {
               
               {/* Analysis Tools */}
               <div className="flex items-center gap-1">
+                <ConversationHistory />
                 <UsageAnalytics />
                 <ModelComparison />
               </div>
@@ -634,6 +638,7 @@ export function ChatInterface() {
               <div className="flex items-center gap-1">
                 <HelpDialog />
                 <SettingsDialog />
+                <ThemeCustomizer />
                 <ThemeToggle />
               </div>
             </div>

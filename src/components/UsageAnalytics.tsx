@@ -59,15 +59,17 @@ function StatCard({ icon: Icon, title, value, subtitle, color = 'blue' }: StatCa
   };
 
   return (
-    <div className={`p-4 rounded-lg border ${colorClasses[color]} transition-colors`}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={`p-4 rounded-lg border ${colorClasses[color]} transition-colors min-h-[120px] flex flex-col justify-between`}>
+      <div className="flex items-center justify-between mb-3">
         <Icon size={20} className="flex-shrink-0" />
       </div>
-      <div className="text-2xl font-bold mb-1">{value}</div>
-      <div className="text-sm opacity-75">{title}</div>
-      {subtitle && (
-        <div className="text-xs opacity-60 mt-1">{subtitle}</div>
-      )}
+      <div className="flex-1">
+        <div className="text-2xl font-bold mb-1 truncate">{value}</div>
+        <div className="text-sm opacity-75 mb-1">{title}</div>
+        {subtitle && (
+          <div className="text-xs opacity-60 truncate">{subtitle}</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -184,7 +186,7 @@ export function UsageAnalytics() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <StatCard
                 icon={MessageSquare}
                 title="Total Messages"
