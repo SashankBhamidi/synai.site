@@ -48,33 +48,33 @@ interface ThemeSettings {
 }
 
 const accentColors = [
-  { name: 'Blue', value: 'blue', color: '#3B82F6' },
-  { name: 'Purple', value: 'purple', color: '#8B5CF6' },
-  { name: 'Green', value: 'green', color: '#10B981' },
-  { name: 'Orange', value: 'orange', color: '#F59E0B' },
-  { name: 'Pink', value: 'pink', color: '#EC4899' },
-  { name: 'Red', value: 'red', color: '#EF4444' },
-  { name: 'Teal', value: 'teal', color: '#14B8A6' },
-  { name: 'Indigo', value: 'indigo', color: '#6366F1' }
+  { name: 'Purple', value: 'purple', hsl: '252 56% 57%', color: '#8B5CF6' },
+  { name: 'Blue', value: 'blue', hsl: '221 83% 53%', color: '#3B82F6' },
+  { name: 'Green', value: 'green', hsl: '142 71% 45%', color: '#10B981' },
+  { name: 'Orange', value: 'orange', hsl: '25 95% 53%', color: '#F59E0B' },
+  { name: 'Pink', value: 'pink', hsl: '330 81% 60%', color: '#EC4899' },
+  { name: 'Red', value: 'red', hsl: '0 72% 51%', color: '#EF4444' },
+  { name: 'Teal', value: 'teal', hsl: '173 80% 40%', color: '#14B8A6' },
+  { name: 'Indigo', value: 'indigo', hsl: '239 84% 67%', color: '#6366F1' }
 ];
 
 const fontFamilies = [
-  { name: 'System Default', value: 'system' },
-  { name: 'Inter', value: 'inter' },
-  { name: 'Roboto', value: 'roboto' },
-  { name: 'Open Sans', value: 'open-sans' },
-  { name: 'Source Sans Pro', value: 'source-sans-pro' },
-  { name: 'Poppins', value: 'poppins' },
-  { name: 'Lato', value: 'lato' },
-  { name: 'Montserrat', value: 'montserrat' }
+  { name: 'System Default', value: 'system', css: 'ui-sans-serif, system-ui, sans-serif' },
+  { name: 'Inter', value: 'inter', css: 'Inter, ui-sans-serif, system-ui, sans-serif' },
+  { name: 'Roboto', value: 'roboto', css: 'Roboto, ui-sans-serif, system-ui, sans-serif' },
+  { name: 'Open Sans', value: 'open-sans', css: '"Open Sans", ui-sans-serif, system-ui, sans-serif' },
+  { name: 'Source Sans Pro', value: 'source-sans-pro', css: '"Source Sans Pro", ui-sans-serif, system-ui, sans-serif' },
+  { name: 'Poppins', value: 'poppins', css: 'Poppins, ui-sans-serif, system-ui, sans-serif' },
+  { name: 'JetBrains Mono', value: 'jetbrains-mono', css: '"JetBrains Mono", ui-monospace, monospace' },
+  { name: 'Fira Code', value: 'fira-code', css: '"Fira Code", ui-monospace, monospace' }
 ];
 
 export function ThemeCustomizer() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [settings, setSettings] = useState<ThemeSettings>({
-    accentColor: 'blue',
-    fontSize: 14,
+    accentColor: 'purple',
+    fontSize: 16,
     fontFamily: 'system',
     borderRadius: 8,
     density: 'comfortable',
@@ -106,30 +106,48 @@ export function ThemeCustomizer() {
   const applyThemeSettings = (settings: ThemeSettings) => {
     const root = document.documentElement;
     
-    // Apply font size
-    root.style.setProperty('--font-size-base', `${settings.fontSize}px`);
-    
-    // Apply border radius
-    root.style.setProperty('--radius', `${settings.borderRadius}px`);
-    
-    // Apply font family
-    if (settings.fontFamily !== 'system') {
-      root.style.setProperty('--font-family', settings.fontFamily);
+    // Apply accent color (primary color)
+    const accentColor = accentColors.find(c => c.value === settings.accentColor);
+    if (accentColor) {
+      root.style.setProperty('--primary', accentColor.hsl);
+      root.style.setProperty('--ring', accentColor.hsl);
     }
     
-    // Apply density
-    const densityValues = {
-      compact: '0.75rem',
-      comfortable: '1rem',
-      spacious: '1.25rem'
+    // Apply border radius
+    root.style.setProperty('--radius', `${settings.borderRadius / 16}rem`);
+    
+    // Apply font family
+    const fontFamily = fontFamilies.find(f => f.value === settings.fontFamily);
+    if (fontFamily && fontFamily.value !== 'system') {
+      root.style.fontFamily = fontFamily.css;
+    } else {
+      root.style.removeProperty('font-family');
+    }
+    
+    // Apply font size
+    root.style.fontSize = `${settings.fontSize}px`;
+    
+    // Apply density through CSS custom properties
+    const densityMultipliers = {
+      compact: '0.8',
+      comfortable: '1',
+      spacious: '1.2'
     };
-    root.style.setProperty('--spacing-unit', densityValues[settings.density]);
+    root.style.setProperty('--density-multiplier', densityMultipliers[settings.density]);
+    
+    // Apply density classes
+    root.classList.remove('density-compact', 'density-comfortable', 'density-spacious');
+    root.classList.add(`density-${settings.density}`);
     
     // Apply animations
     if (!settings.animations) {
       root.style.setProperty('--animation-duration', '0s');
+      root.style.setProperty('--transition-duration', '0s');
+      root.classList.add('no-animations');
     } else {
-      root.style.setProperty('--animation-duration', '0.2s');
+      root.style.setProperty('--animation-duration', '150ms');
+      root.style.setProperty('--transition-duration', '150ms');
+      root.classList.remove('no-animations');
     }
     
     // Apply high contrast
@@ -142,8 +160,8 @@ export function ThemeCustomizer() {
 
   const resetToDefaults = () => {
     const defaultSettings: ThemeSettings = {
-      accentColor: 'blue',
-      fontSize: 14,
+      accentColor: 'purple',
+      fontSize: 16,
       fontFamily: 'system',
       borderRadius: 8,
       density: 'comfortable',
@@ -244,15 +262,15 @@ export function ThemeCustomizer() {
                 <Slider
                   value={[settings.borderRadius]}
                   onValueChange={([value]) => handleSettingChange('borderRadius', value)}
-                  max={16}
+                  max={20}
                   min={0}
-                  step={1}
+                  step={2}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>Sharp (0px)</span>
                   <span>{settings.borderRadius}px</span>
-                  <span>Rounded (16px)</span>
+                  <span>Very Rounded (20px)</span>
                 </div>
               </div>
             </div>
@@ -313,7 +331,7 @@ export function ThemeCustomizer() {
                 <Slider
                   value={[settings.fontSize]}
                   onValueChange={([value]) => handleSettingChange('fontSize', value)}
-                  max={18}
+                  max={20}
                   min={12}
                   step={1}
                   className="w-full"
@@ -321,7 +339,7 @@ export function ThemeCustomizer() {
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>Small (12px)</span>
                   <span>{settings.fontSize}px</span>
-                  <span>Large (18px)</span>
+                  <span>Large (20px)</span>
                 </div>
               </div>
             </div>
