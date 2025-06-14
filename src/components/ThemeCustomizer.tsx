@@ -189,43 +189,43 @@ export function ThemeCustomizer() {
           <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden border-2 shadow-2xl">
-        <DialogHeader className="pb-6 border-b bg-gradient-to-r from-primary/5 to-primary/10 -m-6 mb-6 p-6 rounded-t-lg">
-          <DialogTitle className="flex items-center gap-3 text-2xl">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Palette size={24} className="text-primary" />
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+        <DialogHeader className="theme-header pb-4 border-b">
+          <DialogTitle className="flex items-center theme-spacing text-xl">
+            <div className="p-1.5 bg-primary/10 rounded-full">
+              <Palette size={18} className="text-primary" />
             </div>
             Theme Customization
           </DialogTitle>
-          <p className="text-muted-foreground mt-2 ml-14">
-            Personalize every aspect of your interface - colors, fonts, spacing, and behavior
+          <p className="theme-text text-muted-foreground">
+            Personalize your interface appearance and behavior
           </p>
         </DialogHeader>
         
         <Tabs defaultValue="appearance" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
-            <TabsTrigger value="appearance" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Monitor size={16} />
+          <TabsList className="theme-tabs grid w-full grid-cols-3">
+            <TabsTrigger value="appearance" className="theme-button flex items-center theme-spacing theme-text">
+              <Monitor size={14} />
               Appearance
             </TabsTrigger>
-            <TabsTrigger value="typography" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Type size={16} />
+            <TabsTrigger value="typography" className="theme-button flex items-center theme-spacing theme-text">
+              <Type size={14} />
               Typography
             </TabsTrigger>
-            <TabsTrigger value="behavior" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Sparkles size={16} />
+            <TabsTrigger value="behavior" className="theme-button flex items-center theme-spacing theme-text">
+              <Sparkles size={14} />
               Behavior
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="appearance" className="overflow-y-auto max-h-[60vh] space-y-8 p-1">
+          <TabsContent value="appearance" className="overflow-y-auto max-h-[60vh] theme-spacing flex flex-col mt-4">
             {/* Color Scheme */}
-            <div className="space-y-4 p-4 bg-card rounded-lg border">
-              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
-                <Monitor size={18} />
+            <div className="theme-section">
+              <Label className="theme-text font-medium flex items-center theme-spacing">
+                <Monitor size={14} />
                 Color Scheme
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 theme-spacing">
                 {[
                   { value: 'system', label: 'Auto', icon: Monitor },
                   { value: 'light', label: 'Light', icon: Sun },
@@ -236,11 +236,11 @@ export function ThemeCustomizer() {
                     variant={theme === option.value ? "default" : "outline"}
                     size="sm"
                     onClick={() => setTheme(option.value as any)}
-                    className="flex items-center gap-2"
+                    className="theme-button flex items-center theme-spacing theme-text"
                   >
-                    <option.icon size={14} />
+                    <option.icon size={12} />
                     {option.label}
-                    {theme === option.value && <Check size={12} className="ml-auto" />}
+                    {theme === option.value && <Check size={10} className="ml-auto" />}
                   </Button>
                 ))}
               </div>
@@ -250,22 +250,22 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Accent Color */}
-            <div className="space-y-4 p-4 bg-card rounded-lg border">
-              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
-                <Palette size={18} />
+            <div className="theme-section">
+              <Label className="theme-text font-medium flex items-center theme-spacing">
+                <Palette size={14} />
                 Accent Color
               </Label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 theme-spacing">
                 {accentColors.map(color => (
                   <Button
                     key={color.value}
                     variant={settings.accentColor === color.value ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleSettingChange('accentColor', color.value)}
-                    className="flex items-center gap-2"
+                    className="theme-button flex items-center theme-spacing theme-text"
                   >
                     <div 
-                      className="w-3 h-3 rounded-full"
+                      className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: color.color }}
                     />
                     {color.name}
@@ -275,12 +275,12 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Border Radius */}
-            <div className="space-y-4 p-4 bg-card rounded-lg border">
-              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
-                <div className="w-4 h-4 border-2 border-primary rounded" />
+            <div className="theme-section">
+              <Label className="theme-text font-medium flex items-center theme-spacing">
+                <div className="w-3 h-3 border border-primary rounded" />
                 Border Radius
               </Label>
-              <div className="px-3">
+              <div className="px-2">
                 <Slider
                   value={[settings.borderRadius]}
                   onValueChange={([value]) => handleSettingChange('borderRadius', value)}
@@ -289,21 +289,21 @@ export function ThemeCustomizer() {
                   step={2}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>Sharp (0px)</span>
-                  <span>{settings.borderRadius}px</span>
-                  <span>Very Rounded (20px)</span>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>Sharp</span>
+                  <span className="font-medium">{settings.borderRadius}px</span>
+                  <span>Rounded</span>
                 </div>
               </div>
             </div>
 
             {/* Density */}
-            <div className="space-y-4 p-4 bg-card rounded-lg border">
-              <Label className="text-lg font-semibold flex items-center gap-2 text-primary">
-                <Layers size={18} />
+            <div className="theme-section">
+              <Label className="theme-text font-medium flex items-center theme-spacing">
+                <Layers size={14} />
                 Interface Density
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 theme-spacing">
                 {[
                   { value: 'compact', label: 'Compact' },
                   { value: 'comfortable', label: 'Comfortable' },
@@ -314,6 +314,7 @@ export function ThemeCustomizer() {
                     variant={settings.density === option.value ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleSettingChange('density', option.value)}
+                    className="theme-button theme-text"
                   >
                     {option.label}
                   </Button>
@@ -322,23 +323,23 @@ export function ThemeCustomizer() {
             </div>
           </TabsContent>
           
-          <TabsContent value="typography" className="overflow-y-auto max-h-[60vh] space-y-6">
+          <TabsContent value="typography" className="overflow-y-auto max-h-[60vh] theme-spacing flex flex-col mt-4">
             {/* Font Family */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <Type size={16} />
+            <div className="theme-section">
+              <Label className="theme-text font-medium flex items-center theme-spacing">
+                <Type size={14} />
                 Font Family
               </Label>
               <Select 
                 value={settings.fontFamily} 
                 onValueChange={(value) => handleSettingChange('fontFamily', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="theme-input">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {fontFamilies.map(font => (
-                    <SelectItem key={font.value} value={font.value}>
+                    <SelectItem key={font.value} value={font.value} className="theme-text">
                       {font.name}
                     </SelectItem>
                   ))}
@@ -347,9 +348,9 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Font Size */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Font Size</Label>
-              <div className="px-3">
+            <div className="theme-section">
+              <Label className="theme-text font-medium">Font Size</Label>
+              <div className="px-2">
                 <Slider
                   value={[settings.fontSize]}
                   onValueChange={([value]) => handleSettingChange('fontSize', value)}
@@ -358,42 +359,41 @@ export function ThemeCustomizer() {
                   step={1}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>Small (12px)</span>
-                  <span>{settings.fontSize}px</span>
-                  <span>Large (20px)</span>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>Small</span>
+                  <span className="font-medium">{settings.fontSize}px</span>
+                  <span>Large</span>
                 </div>
               </div>
             </div>
 
             {/* Preview Text */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Preview</Label>
+            <div className="theme-section">
+              <Label className="theme-text font-medium">Preview</Label>
               <div 
-                className="border rounded-lg p-4 bg-muted/50"
+                className="border rounded-lg p-3 bg-muted/30"
                 style={{ 
                   fontSize: `${settings.fontSize}px`,
                   fontFamily: settings.fontFamily !== 'system' ? settings.fontFamily : undefined
                 }}
               >
                 <p className="font-semibold mb-2">The quick brown fox jumps over the lazy dog</p>
-                <p className="text-muted-foreground text-sm">
-                  This is how your text will appear with the selected typography settings.
-                  You can adjust the font family and size to your preference.
+                <p className="text-muted-foreground" style={{ fontSize: `${Math.max(12, settings.fontSize - 2)}px` }}>
+                  This preview shows how your text will appear with the selected typography settings.
                 </p>
               </div>
             </div>
           </TabsContent>
           
-          <TabsContent value="behavior" className="overflow-y-auto max-h-[60vh] space-y-6">
+          <TabsContent value="behavior" className="overflow-y-auto max-h-[60vh] theme-spacing flex flex-col mt-4">
             {/* Animations */}
-            <div className="flex items-center justify-between">
+            <div className="theme-section flex items-center justify-between">
               <div>
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Sparkles size={16} />
+                <Label className="theme-text font-medium flex items-center theme-spacing">
+                  <Sparkles size={14} />
                   Animations
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="theme-text text-muted-foreground mt-1">
                   Enable smooth transitions and animations
                 </p>
               </div>
@@ -404,13 +404,13 @@ export function ThemeCustomizer() {
             </div>
 
             {/* High Contrast */}
-            <div className="flex items-center justify-between">
+            <div className="theme-section flex items-center justify-between">
               <div>
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Contrast size={16} />
+                <Label className="theme-text font-medium flex items-center theme-spacing">
+                  <Contrast size={14} />
                   High Contrast
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="theme-text text-muted-foreground mt-1">
                   Increase contrast for better accessibility
                 </p>
               </div>
@@ -421,11 +421,11 @@ export function ThemeCustomizer() {
             </div>
 
             {/* Reset to Defaults */}
-            <div className="pt-4 border-t">
+            <div className="theme-section border-t">
               <Button
                 variant="outline"
                 onClick={resetToDefaults}
-                className="w-full"
+                className="theme-button w-full theme-text"
               >
                 Reset to Defaults
               </Button>
