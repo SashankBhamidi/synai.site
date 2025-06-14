@@ -23,6 +23,7 @@ import {
   TabsTrigger
 } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { 
   Zap, 
   Clock, 
