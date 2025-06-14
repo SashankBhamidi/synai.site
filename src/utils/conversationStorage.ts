@@ -283,24 +283,49 @@ export const getOrCreateConversation = (initialMessage?: string): { conversation
  */
 export const generateConversationTitle = (message: string): string => {
   try {
-    // Remove markdown formatting
-    let title = message.replace(/[#*`_~[\]]/g, '').trim();
+    // Remove markdown formatting and clean up
+    let title = message.replace(/[#*`_~[\]()]/g, '').trim();
     
-    // Take first 50 characters
-    title = title.substring(0, 50);
+    // Remove common question/command words and make it more natural
+    title = title.replace(/^(please|can you|could you|help me|i need|i want|i would like|how do i|how to|what is|what are|tell me|explain|show me)\s+/i, '');
     
-    // If it ends mid-word, cut to last complete word
-    const lastSpaceIndex = title.lastIndexOf(' ');
-    if (lastSpaceIndex > 20 && title.length === 50) {
-      title = title.substring(0, lastSpaceIndex);
-    }
+    // Remove trailing punctuation except important ones
+    title = title.replace(/[.!?]+$/, '');
     
-    // Add ellipsis if truncated
-    if (message.length > title.length) {
+    // Capitalize first letter
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+    
+    // Take first 45 characters for a cleaner look
+    if (title.length > 45) {
+      title = title.substring(0, 45);
+      
+      // If it ends mid-word, cut to last complete word
+      const lastSpaceIndex = title.lastIndexOf(' ');
+      if (lastSpaceIndex > 20) {
+        title = title.substring(0, lastSpaceIndex);
+      }
+      
+      // Add ellipsis if truncated
       title += '...';
     }
     
-    return title || 'New conversation';
+    // Fallback if title is too short or empty
+    if (!title || title.length < 3) {
+      // Extract key words from original message
+      const words = message.split(' ').filter(word => 
+        word.length > 3 && 
+        !['what', 'how', 'can', 'could', 'would', 'please', 'help', 'tell', 'show', 'explain'].includes(word.toLowerCase())
+      );
+      
+      if (words.length > 0) {
+        title = words.slice(0, 3).join(' ');
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+      } else {
+        title = 'New conversation';
+      }
+    }
+    
+    return title;
   } catch (error) {
     console.error('Error generating conversation title:', error);
     return 'New conversation';

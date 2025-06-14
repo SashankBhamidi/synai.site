@@ -56,7 +56,7 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSaveEdit();
     } else if (e.key === 'Escape') {

@@ -44,7 +44,7 @@ export function ChatInterface() {
   const isMobile = useIsMobile();
   
   // Use settings from context
-  const { temperature, enableMemory } = useSettings();
+  const { temperature, enableMemory, streamResponses } = useSettings();
 
   // Initialize conversation system
   useEffect(() => {
@@ -216,8 +216,9 @@ export function ChatInterface() {
     return apiMessages;
   };
 
-  const handleSendMessage = async (content: string, isRegeneration: boolean = false) => {
-    if (!isRegeneration) {
+  const handleSendMessage = async (content: string, isRegeneration: boolean = false, initialMessages?: Message[]) => {
+    // Clear input value immediately but keep focus handling separate
+    if (!isRegeneration && !initialMessages) {
       setInputValue("");
     }
     
@@ -246,9 +247,9 @@ export function ChatInterface() {
       }
     }
     
-    let updatedMessages = messages;
+    let updatedMessages = initialMessages || messages;
     
-    if (!isRegeneration) {
+    if (!isRegeneration && !initialMessages) {
       const userMessage: Message = {
         id: uuidv4(),
         role: "user",
@@ -313,6 +314,16 @@ export function ChatInterface() {
       toast.error('Failed to get AI response');
     } finally {
       setIsLoading(false);
+      
+      // Refocus the input after the message is sent (but not for edits)
+      if (!isRegeneration && !initialMessages) {
+        setTimeout(() => {
+          const textarea = document.querySelector('textarea');
+          if (textarea) {
+            textarea.focus();
+          }
+        }, 100);
+      }
     }
   };
 
@@ -356,22 +367,34 @@ export function ChatInterface() {
     setInputValue(value);
   };
 
-  const handleEditMessage = (messageId: string, newContent: string) => {
-    const updatedMessages = messages.map(msg => 
-      msg.id === messageId ? { ...msg, content: newContent } : msg
-    );
-    setMessages(updatedMessages);
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    const editedMessage = messages[messageIndex];
+    
+    if (!editedMessage || editedMessage.role !== 'user') return;
+    
+    // Update the user message
+    const updatedMessage = { ...editedMessage, content: newContent };
+    
+    // Remove all messages after the edited message (including AI responses)
+    const messagesUpToEdit = messages.slice(0, messageIndex);
+    const newMessages = [...messagesUpToEdit, updatedMessage];
+    
+    setMessages(newMessages);
     
     // Save updated conversation
     if (currentConversationId) {
       const conversations = getConversations();
       const conversation = conversations.find(c => c.id === currentConversationId);
       if (conversation) {
-        saveConversation(conversation, updatedMessages);
+        saveConversation(conversation, newMessages);
       }
     }
     
-    toast.success("Message updated");
+    toast.success("Message updated - generating new response...");
+    
+    // Regenerate AI response with the edited message
+    await handleSendMessage(newContent, false, newMessages);
   };
 
   const handleDeleteMessage = (messageId: string) => {

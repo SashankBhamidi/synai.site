@@ -48,8 +48,8 @@ export function MessageActions({ message, onRegenerate, onEdit, onDelete, isLast
         </Button>
       )}
       
-      {/* Delete button for all messages */}
-      {onDelete && (
+      {/* Delete button for assistant messages only */}
+      {isAssistant && onDelete && (
         <Button
           variant="ghost"
           size="sm"
