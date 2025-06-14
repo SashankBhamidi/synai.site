@@ -33,6 +33,7 @@ export class AnthropicService extends BaseProviderService {
       const response = await this.client.messages.create({
         model: model,
         max_tokens: 4096,
+        system: 'You are Synthesis AI, a helpful AI assistant. You remember previous messages in our conversation and can refer to them. Always identify yourself as Synthesis AI, never as Claude, Anthropic or any other name. Provide varied and thoughtful responses.',
         messages: anthropicMessages,
         temperature: options.temperature || 0.7,
       });

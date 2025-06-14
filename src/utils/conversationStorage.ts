@@ -283,52 +283,42 @@ export const getOrCreateConversation = (initialMessage?: string): { conversation
  */
 export const generateConversationTitle = (message: string): string => {
   try {
-    // Remove markdown formatting and clean up
-    let title = message.replace(/[#*`_~[\]()]/g, '').trim();
+    // Clean up the message
+    let title = message
+      .replace(/[#*`_~[\]()]/g, '') // Remove markdown
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
     
-    // Remove common question/command words and make it more natural
-    title = title.replace(/^(please|can you|could you|help me|i need|i want|i would like|how do i|how to|what is|what are|tell me|explain|show me)\s+/i, '');
-    
-    // Remove trailing punctuation except important ones
-    title = title.replace(/[.!?]+$/, '');
+    // Remove common question/command starters
+    title = title.replace(/^(please\s+|can\s+you\s+|could\s+you\s+|help\s+me\s+|i\s+need\s+|i\s+want\s+|i\s+would\s+like\s+|how\s+do\s+i\s+|how\s+to\s+|what\s+is\s+|what\s+are\s+|tell\s+me\s+|explain\s+|show\s+me\s+)/i, '');
     
     // Capitalize first letter
-    title = title.charAt(0).toUpperCase() + title.slice(1);
-    
-    // Take first 45 characters for a cleaner look
-    if (title.length > 45) {
-      title = title.substring(0, 45);
-      
-      // If it ends mid-word, cut to last complete word
-      const lastSpaceIndex = title.lastIndexOf(' ');
-      if (lastSpaceIndex > 20) {
-        title = title.substring(0, lastSpaceIndex);
-      }
-      
-      // Add ellipsis if truncated
-      title += '...';
+    if (title.length > 0) {
+      title = title.charAt(0).toUpperCase() + title.slice(1);
     }
     
-    // Fallback if title is too short or empty
-    if (!title || title.length < 3) {
-      // Extract key words from original message
-      const words = message.split(' ').filter(word => 
-        word.length > 3 && 
-        !['what', 'how', 'can', 'could', 'would', 'please', 'help', 'tell', 'show', 'explain'].includes(word.toLowerCase())
-      );
-      
-      if (words.length > 0) {
-        title = words.slice(0, 3).join(' ');
-        title = title.charAt(0).toUpperCase() + title.slice(1);
-      } else {
-        title = 'New conversation';
+    // Truncate to 30 characters max (ChatGPT style)
+    if (title.length > 30) {
+      title = title.substring(0, 30);
+      // Find last complete word
+      const lastSpace = title.lastIndexOf(' ');
+      if (lastSpace > 15) {
+        title = title.substring(0, lastSpace);
       }
+    }
+    
+    // Remove trailing punctuation
+    title = title.replace(/[.!?,:;]+$/, '');
+    
+    // Fallback if title is too short
+    if (!title || title.length < 3) {
+      title = 'New Chat';
     }
     
     return title;
   } catch (error) {
     console.error('Error generating conversation title:', error);
-    return 'New conversation';
+    return 'New Chat';
   }
 };
 

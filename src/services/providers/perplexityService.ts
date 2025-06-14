@@ -46,7 +46,13 @@ export class PerplexityService extends BaseProviderService {
         },
         body: JSON.stringify({
           model: model,
-          messages: perplexityMessages,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are Synthesis AI, a helpful AI assistant. You remember previous messages in our conversation and can refer to them. Always identify yourself as Synthesis AI, never as Perplexity or any other name. Provide varied and thoughtful responses.'
+            },
+            ...perplexityMessages
+          ],
           temperature: options.temperature || 0.7,
           max_tokens: options.maxTokens || 1000,
           stream: !!options.stream

@@ -216,7 +216,7 @@ export function ChatInterface() {
     return apiMessages;
   };
 
-  const handleSendMessage = async (content: string, isRegeneration: boolean = false, initialMessages?: Message[]) => {
+  const handleSendMessage = async (content: string, isRegeneration: boolean = false, initialMessages?: Message[], previousRegenerationCount?: number) => {
     // Clear input value immediately but keep focus handling separate
     if (!isRegeneration && !initialMessages) {
       setInputValue("");
@@ -280,6 +280,7 @@ export function ChatInterface() {
         message: content,
         model: selectedModel.id,
         temperature: temperature + (isRegeneration ? Math.random() * 0.2 : 0),
+        stream: streamResponses,
         simulateResponse: useSimulatedResponse,
         messages: apiMessages
       };
@@ -292,7 +293,7 @@ export function ChatInterface() {
         content: response,
         timestamp: new Date(),
         model: selectedModel,
-        regenerationCount: isRegeneration ? (messages[messages.length - 1]?.regenerationCount || 0) + 1 : undefined
+        regenerationCount: isRegeneration ? (previousRegenerationCount || 0) + 1 : undefined
       };
       
       const finalMessages = [...updatedMessages, aiMessage];
@@ -336,6 +337,10 @@ export function ChatInterface() {
     setIsRegenerating(true);
     
     try {
+      // Find the last AI message and its regeneration count
+      const lastAIMessage = messages[messages.length - 1];
+      const regenerationCount = lastAIMessage?.regenerationCount || 0;
+      
       // Remove the last AI response
       const messagesWithoutLastAI = messages.slice(0, -1);
       setMessages(messagesWithoutLastAI);
@@ -343,7 +348,7 @@ export function ChatInterface() {
       // Get the last user message
       const lastUserMessage = messagesWithoutLastAI[messagesWithoutLastAI.length - 1];
       if (lastUserMessage && lastUserMessage.role === "user") {
-        await handleSendMessage(lastUserMessage.content, true);
+        await handleSendMessage(lastUserMessage.content, true, messagesWithoutLastAI, regenerationCount);
       }
     } catch (error) {
       console.error('Error during regeneration:', error);
@@ -433,11 +438,11 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">
       {/* Fixed Header */}
-      <header className="flex-shrink-0 flex items-center justify-between p-3 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <MessagesSquare size={18} className="text-primary flex-shrink-0 sm:w-5 sm:h-5" />
+      <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
+        <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
+          <MessagesSquare size={16} className="text-primary flex-shrink-0 sm:w-5 sm:h-5" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-base sm:text-lg font-medium truncate">
+            <h2 className="text-sm sm:text-lg font-medium truncate">
               {currentConversationId ? (
                 (() => {
                   const conversations = getConversations();
@@ -449,66 +454,84 @@ export function ChatInterface() {
               )}
             </h2>
             {messages.length > 0 && (
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              <p className="text-xs text-muted-foreground truncate hidden sm:block">
                 {messages.length} message{messages.length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
         </div>
         
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="hidden md:block w-32 lg:w-40">
-            <ProviderSelector 
-              selectedProvider={selectedProvider}
-              onSelectProvider={handleProviderChange}
-            />
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="w-20 sm:w-32 lg:w-40">
+              <ProviderSelector 
+                selectedProvider={selectedProvider}
+                onSelectProvider={handleProviderChange}
+              />
+            </div>
+            
+            <div className="w-20 sm:w-32 lg:w-40">
+              <ModelSelector 
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+              />
+            </div>
           </div>
           
-          <div className="hidden md:block w-32 lg:w-40">
-            <ModelSelector 
-              selectedModel={selectedModel}
-              onSelectModel={setSelectedModel}
-            />
-          </div>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleClearChat}
-            className="rounded-full h-7 w-7 sm:h-8 sm:w-8"
-            title="Clear chat"
-          >
-            <Trash2 size={14} className="sm:w-4 sm:h-4" />
-            <span className="sr-only">Clear chat</span>
-          </Button>
-          
-          <div className="hidden sm:flex items-center gap-1">
-            <HelpDialog />
-            <SettingsDialog />
-            <ThemeToggle />
-          </div>
-          
-          {/* Mobile menu for settings */}
-          <div className="sm:hidden">
-            <SettingsDialog />
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleClearChat}
+              className="rounded-full h-7 w-7 sm:h-8 sm:w-8"
+              title="Clear chat"
+            >
+              <Trash2 size={12} className="sm:w-4 sm:h-4" />
+              <span className="sr-only">Clear chat</span>
+            </Button>
+            
+            <div className="hidden sm:flex items-center gap-1">
+              <HelpDialog />
+              <SettingsDialog />
+              <ThemeToggle />
+            </div>
+            
+            {/* Mobile menu for settings */}
+            <div className="sm:hidden">
+              <SettingsDialog />
+            </div>
           </div>
         </div>
       </header>
       
       {/* Scrollable Content */}
       <div 
-        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0 custom-scrollbar"
         ref={messagesContainerRef}
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-8">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 mb-3 sm:mb-4 rounded-full bg-gradient-radial from-primary/30 to-transparent flex items-center justify-center">
-              <MessagesSquare size={24} className="text-primary sm:w-8 sm:h-8" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-6 rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center border border-primary/20 shadow-lg">
+              <MessagesSquare size={32} className="text-primary sm:w-10 sm:h-10" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Welcome to Synthesis AI</h2>
-            <p className="text-muted-foreground max-w-md text-sm sm:text-base">
-              Ask anything or start a conversation with advanced AI models from different providers.
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Welcome to Synthesis AI</h2>
+            <p className="text-muted-foreground max-w-lg text-base sm:text-lg leading-relaxed">
+              Engage with powerful AI models from multiple providers. Ask questions, get insights, and explore ideas.
             </p>
+            <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
+                <h3 className="font-semibold text-sm mb-2">Multi-Provider</h3>
+                <p className="text-xs text-muted-foreground">Choose from OpenAI, Anthropic, and Perplexity models</p>
+              </div>
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
+                <h3 className="font-semibold text-sm mb-2">Smart Memory</h3>
+                <p className="text-xs text-muted-foreground">Conversation context is maintained across messages</p>
+              </div>
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
+                <h3 className="font-semibold text-sm mb-2">Customizable</h3>
+                <p className="text-xs text-muted-foreground">Adjust temperature, streaming, and other settings</p>
+              </div>
+            </div>
           </div>
         ) : (
           messages.map((message, index) => (
