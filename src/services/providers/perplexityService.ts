@@ -42,7 +42,7 @@ export class PerplexityService extends BaseProviderService {
           messages: requestMessages,
           temperature: options.temperature || 0.7,
           max_tokens: options.maxTokens || 1000,
-          stream: !!options.stream
+          stream: false // Explicitly disable streaming to prevent SSE responses
         })
       });
 
@@ -59,7 +59,19 @@ export class PerplexityService extends BaseProviderService {
         }
       }
 
-      const data = await response.json();
+      // Debug the response type
+      const responseText = await response.text();
+      console.log('Perplexity raw response:', responseText.substring(0, 200));
+      
+      // Try to parse as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (error) {
+        console.error('Failed to parse Perplexity response as JSON:', error);
+        throw new Error(`Invalid response format from Perplexity: ${responseText.substring(0, 100)}`);
+      }
+      
       let content = data.choices[0]?.message?.content || '';
       
       // Clean up citation numbers and references

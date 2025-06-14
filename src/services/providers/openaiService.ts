@@ -56,7 +56,7 @@ export class OpenAIService extends BaseProviderService {
           ],
           temperature: options.temperature || 0.8, // Slightly higher for more variation
           max_tokens: options.maxTokens || 1000,
-          stream: !!options.stream,
+          stream: false, // Explicitly disable streaming to prevent SSE responses
           // Add some randomness to prevent identical responses
           top_p: 0.9,
           frequency_penalty: 0.1,
@@ -77,7 +77,19 @@ export class OpenAIService extends BaseProviderService {
         }
       }
 
-      const data = await response.json();
+      // Debug the response type
+      const responseText = await response.text();
+      console.log('OpenAI raw response:', responseText.substring(0, 200));
+      
+      // Try to parse as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (error) {
+        console.error('Failed to parse OpenAI response as JSON:', error);
+        throw new Error(`Invalid response format from OpenAI: ${responseText.substring(0, 100)}`);
+      }
+      
       let content = data.choices[0]?.message?.content || '';
       
       // Clean up any reference numbers that might appear
