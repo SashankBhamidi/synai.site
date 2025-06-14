@@ -134,6 +134,29 @@ export function ModelComparison() {
     }
   };
 
+  const handleSelectAll = () => {
+    setSelectedModels([...availableModels]);
+    toast.success(`Selected all ${availableModels.length} models`);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedModels([]);
+    toast.success('Deselected all models');
+  };
+
+  const handleSelectAllFromProvider = (provider: string) => {
+    const providerModels = modelsByProvider[provider];
+    const currentlySelected = selectedModels.filter(m => m.provider !== provider);
+    const newSelection = [...currentlySelected, ...providerModels];
+    setSelectedModels(newSelection);
+    toast.success(`Selected all ${providerModels.length} models from ${provider}`);
+  };
+
+  const handleDeselectAllFromProvider = (provider: string) => {
+    setSelectedModels(prev => prev.filter(m => m.provider !== provider));
+    toast.success(`Deselected all models from ${provider}`);
+  };
+
   const handleTestPromptSelect = (testPrompt: TestPrompt) => {
     setPrompt(testPrompt.prompt);
     toast.success(`Test prompt "${testPrompt.title}" loaded`);
@@ -304,42 +327,69 @@ export function ModelComparison() {
 
             {/* Model Selection */}
             <div>
-              <h3 className="text-sm font-semibold mb-2">
-                Select Models ({selectedModels.length} selected)
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">
+                  Select Models ({selectedModels.length}/{availableModels.length} selected)
+                </h3>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={selectedModels.length === availableModels.length ? handleDeselectAll : handleSelectAll}
+                    className="text-xs h-7"
+                  >
+                    {selectedModels.length === availableModels.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+              </div>
               <ScrollArea className="h-[200px] border rounded-md p-3">
-                {Object.entries(modelsByProvider).map(([provider, models]) => (
-                  <div key={provider} className="mb-4 last:mb-0">
-                    <div className="font-medium text-sm mb-2 flex items-center gap-2">
-                      {provider}
-                      <Badge variant="secondary" className="text-xs">
-                        {models.length} models
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 ml-2">
-                      {models.map((model) => (
-                        <div key={model.id} className="flex items-start space-x-2">
-                          <Checkbox
-                            id={model.id}
-                            checked={selectedModels.some(m => m.id === model.id)}
-                            onCheckedChange={(checked) => handleModelToggle(model, !!checked)}
-                          />
-                          <div className="grid gap-1 leading-none">
-                            <label
-                              htmlFor={model.id}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {model.name}
-                            </label>
-                            <p className="text-xs text-muted-foreground">
-                              {model.description}
-                            </p>
-                          </div>
+                {Object.entries(modelsByProvider).map(([provider, models]) => {
+                  const providerSelected = selectedModels.filter(m => m.provider === provider).length;
+                  const allProviderSelected = providerSelected === models.length;
+                  
+                  return (
+                    <div key={provider} className="mb-4 last:mb-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{provider}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {providerSelected}/{models.length} selected
+                          </Badge>
                         </div>
-                      ))}
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => allProviderSelected ? handleDeselectAllFromProvider(provider) : handleSelectAllFromProvider(provider)}
+                          className="text-xs h-6 px-2"
+                        >
+                          {allProviderSelected ? 'Deselect All' : 'Select All'}
+                        </Button>
+                      </div>
+                      <div className="space-y-2 ml-2">
+                        {models.map((model) => (
+                          <div key={model.id} className="flex items-start space-x-2">
+                            <Checkbox
+                              id={model.id}
+                              checked={selectedModels.some(m => m.id === model.id)}
+                              onCheckedChange={(checked) => handleModelToggle(model, !!checked)}
+                            />
+                            <div className="grid gap-1 leading-none">
+                              <label
+                                htmlFor={model.id}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {model.name}
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                {model.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </ScrollArea>
             </div>
 
@@ -385,12 +435,15 @@ export function ModelComparison() {
                 <div className="text-sm font-medium mb-2">Prompt:</div>
                 <div className="text-sm bg-muted p-3 rounded-md mb-4">{prompt}</div>
 
-                <ScrollArea className="flex-1">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ScrollArea className="flex-1 max-h-[600px]">
+                  <div className="space-y-4">
                     {results.map((result, index) => (
                       <div key={result.model.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              #{index + 1}
+                            </div>
                             <Badge variant="outline">{result.model.provider}</Badge>
                             <span className="font-medium text-sm">{result.model.name}</span>
                           </div>
@@ -420,6 +473,7 @@ export function ModelComparison() {
                                   variant="ghost"
                                   onClick={() => copyResult(result)}
                                   className="h-6 w-6 p-0"
+                                  title="Copy response"
                                 >
                                   <Copy size={12} />
                                 </Button>
@@ -438,10 +492,12 @@ export function ModelComparison() {
                               {result.error}
                             </div>
                           ) : (
-                            <div className="prose prose-sm max-w-none">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {result.response}
-                              </ReactMarkdown>
+                            <div className="max-h-[300px] overflow-y-auto">
+                              <div className="prose prose-sm max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {result.response}
+                                </ReactMarkdown>
+                              </div>
                             </div>
                           )}
                         </div>
