@@ -31,12 +31,13 @@ import {
   Contrast,
   Type,
   Layers,
-  Sparkles
+  Sparkles,
+  Check
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/providers/ThemeProvider";
 
 interface ThemeSettings {
-  colorScheme: 'auto' | 'light' | 'dark';
   accentColor: string;
   fontSize: number;
   fontFamily: string;
@@ -70,8 +71,8 @@ const fontFamilies = [
 
 export function ThemeCustomizer() {
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [settings, setSettings] = useState<ThemeSettings>({
-    colorScheme: 'auto',
     accentColor: 'blue',
     fontSize: 14,
     fontFamily: 'system',
@@ -83,10 +84,12 @@ export function ThemeCustomizer() {
 
   useEffect(() => {
     // Load saved settings from localStorage
-    const savedSettings = localStorage.getItem('theme-settings');
+    const savedSettings = localStorage.getItem('synthesis-theme-settings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
+        applyThemeSettings(parsed);
       } catch (error) {
         console.error('Error loading theme settings:', error);
       }
@@ -95,7 +98,7 @@ export function ThemeCustomizer() {
 
   const saveSettings = (newSettings: ThemeSettings) => {
     setSettings(newSettings);
-    localStorage.setItem('theme-settings', JSON.stringify(newSettings));
+    localStorage.setItem('synthesis-theme-settings', JSON.stringify(newSettings));
     applyThemeSettings(newSettings);
     toast.success('Theme settings saved');
   };
@@ -139,7 +142,6 @@ export function ThemeCustomizer() {
 
   const resetToDefaults = () => {
     const defaultSettings: ThemeSettings = {
-      colorScheme: 'auto',
       accentColor: 'blue',
       fontSize: 14,
       fontFamily: 'system',
@@ -159,9 +161,9 @@ export function ThemeCustomizer() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Palette size={16} className="mr-2" />
-          Customize
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Palette size={18} />
+          <span className="sr-only">Customize Theme</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
@@ -191,22 +193,26 @@ export function ThemeCustomizer() {
               </Label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: 'auto', label: 'Auto', icon: Monitor },
+                  { value: 'system', label: 'Auto', icon: Monitor },
                   { value: 'light', label: 'Light', icon: Sun },
                   { value: 'dark', label: 'Dark', icon: Moon }
                 ].map(option => (
                   <Button
                     key={option.value}
-                    variant={settings.colorScheme === option.value ? "default" : "outline"}
+                    variant={theme === option.value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => handleSettingChange('colorScheme', option.value)}
+                    onClick={() => setTheme(option.value as any)}
                     className="flex items-center gap-2"
                   >
                     <option.icon size={14} />
                     {option.label}
+                    {theme === option.value && <Check size={12} className="ml-auto" />}
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Current: {theme === 'system' ? `System (${resolvedTheme})` : theme}
+              </p>
             </div>
 
             {/* Accent Color */}

@@ -222,6 +222,8 @@ export function ChatSidebar() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [conflictResolution, setConflictResolution] = useState<'skip' | 'replace' | 'rename'>('skip');
+  const [showFolderDialog, setShowFolderDialog] = useState(false);
+  const [folderName, setFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load conversations, folders and current conversation
@@ -385,9 +387,18 @@ export function ChatSidebar() {
     toast.success(`Removed tag: ${tag}`);
   };
 
-  const handleCreateFolder = (name: string) => {
-    createFolder(name);
-    toast.success(`Created folder: ${name}`);
+  const handleCreateFolderClick = () => {
+    setShowFolderDialog(true);
+    setFolderName("");
+  };
+
+  const handleCreateFolder = () => {
+    if (folderName.trim()) {
+      createFolder(folderName.trim());
+      toast.success(`Created folder: ${folderName.trim()}`);
+      setShowFolderDialog(false);
+      setFolderName("");
+    }
   };
 
   const handleClearAll = () => {
@@ -485,16 +496,28 @@ export function ChatSidebar() {
             <h1 className="text-base font-semibold truncate">Synthesis AI</h1>
           </div>
           
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-7 w-7 rounded-full flex-shrink-0"
-            onClick={handleNewChat}
-            title="New chat"
-          >
-            <Plus size={14} />
-            <span className="sr-only">New chat</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full flex-shrink-0"
+              onClick={handleCreateFolderClick}
+              title="New folder"
+            >
+              <Folder size={14} />
+              <span className="sr-only">New folder</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full flex-shrink-0"
+              onClick={handleNewChat}
+              title="New chat"
+            >
+              <Plus size={14} />
+              <span className="sr-only">New chat</span>
+            </Button>
+          </div>
         </div>
         
         {/* Search */}
@@ -736,6 +759,44 @@ export function ChatSidebar() {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleImportConfirm}>
               Import
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Folder Creation Dialog */}
+      <AlertDialog open={showFolderDialog} onOpenChange={setShowFolderDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create New Folder</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a name for the new folder to organize your conversations.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Folder name..."
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleCreateFolder();
+                }
+              }}
+              className="w-full"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowFolderDialog(false);
+              setFolderName("");
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleCreateFolder} disabled={!folderName.trim()}>
+              Create
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -7,14 +7,12 @@ import { ModelSelector } from "./ModelSelector";
 import { ProviderSelector } from "./ProviderSelector";
 import { TypingIndicator } from "./TypingIndicator";
 import { SettingsDialog } from "./SettingsDialog";
-import { ThemeToggle } from "./ThemeToggle";
 import { HelpDialog } from "./HelpDialog";
 import { WelcomeTooltip } from "./WelcomeTooltip";
 import { ModelComparison } from "./ModelComparison";
 import { UsageAnalytics } from "./UsageAnalytics";
 import { SuggestionPrompts } from "./SuggestionPrompts";
 import { QuickActions } from "./QuickActions";
-import { ConversationHistory } from "./ConversationHistory";
 import { ThemeCustomizer } from "./ThemeCustomizer";
 import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
 import { recordMessage } from "@/utils/usageAnalytics";
@@ -25,6 +23,7 @@ import { hasApiKey, getConfiguredProviders } from "@/utils/apiKeyStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useSettings } from "@/contexts/SettingsContext";
 import { 
   getConversations,
@@ -67,6 +66,7 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { toggleSidebar, state: sidebarState } = useSidebar();
   
   // Use settings from context
   const { temperature, enableMemory, streamResponses } = useSettings();
@@ -521,31 +521,23 @@ export function ChatInterface() {
         <div className="sm:hidden">
           <div className="flex items-center justify-between p-2 min-h-[48px]">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <MessagesSquare size={16} className="text-primary flex-shrink-0" />
-              <h2 className="text-sm font-medium truncate">
-                {currentConversationId ? (
-                  (() => {
-                    const conversations = getConversations();
-                    const current = conversations.find(c => c.id === currentConversationId);
-                    return current?.title || "Untitled Conversation";
-                  })()
-                ) : (
-                  "New Chat"
-                )}
+              <Button
+                variant="ghost" 
+                size="icon"
+                onClick={toggleSidebar}
+                className="h-7 w-7 rounded-full flex-shrink-0"
+                title="Toggle Sidebar"
+              >
+                <MessagesSquare size={16} />
+              </Button>
+              <h2 className="text-sm font-medium">
+                Synthesis AI
               </h2>
             </div>
             
             <div className="flex items-center gap-1 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleClearChat}
-                className="rounded-full h-7 w-7"
-                title="Clear chat"
-              >
-                <Trash2 size={12} />
-              </Button>
               <SettingsDialog />
+              <ThemeCustomizer />
             </div>
           </div>
           
@@ -567,39 +559,23 @@ export function ChatInterface() {
         </div>
         
         {/* Desktop Header */}
-        <div className="hidden sm:flex items-center justify-between p-4 min-h-[72px]">
+        <div className="hidden sm:flex items-center justify-between p-4 min-h-[64px]">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <MessagesSquare size={20} className="text-primary flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-medium truncate">
-                {currentConversationId ? (
-                  (() => {
-                    const conversations = getConversations();
-                    const current = conversations.find(c => c.id === currentConversationId);
-                    return current?.title || "Untitled Conversation";
-                  })()
-                ) : (
-                  "New Chat"
-                )}
-              </h2>
-              {messages.length > 0 && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {messages.length} message{messages.length !== 1 ? 's' : ''}
-                </p>
-              )}
-            </div>
+            <h1 className="text-lg font-medium">Synthesis AI</h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Model Selection */}
             <div className="flex items-center gap-2">
-              <div className="w-32 lg:w-40">
+              <div className="w-36">
                 <ProviderSelector 
                   selectedProvider={selectedProvider}
                   onSelectProvider={handleProviderChange}
                 />
               </div>
               
-              <div className="w-32 lg:w-40">
+              <div className="w-36">
                 <ModelSelector 
                   selectedModel={selectedModel}
                   onSelectModel={handleModelChange}
@@ -607,40 +583,16 @@ export function ChatInterface() {
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Chat Actions */}
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleClearChat}
-                  className="rounded-full h-8 w-8"
-                  title="Clear chat"
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-              
-              {/* Divider */}
-              <div className="w-px h-6 bg-border" />
-              
-              {/* Analysis Tools */}
-              <div className="flex items-center gap-1">
-                <ConversationHistory />
-                <UsageAnalytics />
-                <ModelComparison />
-              </div>
-              
-              {/* Divider */}
-              <div className="w-px h-6 bg-border" />
-              
-              {/* Settings & Theme */}
-              <div className="flex items-center gap-1">
-                <HelpDialog />
-                <SettingsDialog />
-                <ThemeCustomizer />
-                <ThemeToggle />
-              </div>
+            {/* Divider */}
+            <div className="w-px h-6 bg-border" />
+            
+            {/* Tools & Settings */}
+            <div className="flex items-center gap-1">
+              <UsageAnalytics />
+              <ModelComparison />
+              <HelpDialog />
+              <SettingsDialog />
+              <ThemeCustomizer />
             </div>
           </div>
         </div>
