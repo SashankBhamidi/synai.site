@@ -10,7 +10,10 @@ import { SettingsDialog } from "./SettingsDialog";
 import { ThemeToggle } from "./ThemeToggle";
 import { HelpDialog } from "./HelpDialog";
 import { WelcomeTooltip } from "./WelcomeTooltip";
+import { ModelComparison } from "./ModelComparison";
+import { UsageAnalytics } from "./UsageAnalytics";
 import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
+import { recordMessage } from "@/utils/usageAnalytics";
 import { Button } from "@/components/ui/button";
 import { Trash2, MessagesSquare } from "lucide-react";
 import { sendAiMessage } from "@/services/aiService";
@@ -272,6 +275,7 @@ export function ChatInterface() {
     }
     
     setIsLoading(true);
+    const startTime = Date.now();
 
     try {
       const provider = selectedProvider.toLowerCase();
@@ -296,6 +300,7 @@ export function ChatInterface() {
       };
 
       const response = await sendAiMessage(provider, requestOptions);
+      const responseTime = Date.now() - startTime;
 
       const aiMessage: Message = {
         id: uuidv4(),
@@ -308,6 +313,18 @@ export function ChatInterface() {
       
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
+      
+      // Record usage analytics
+      recordMessage({
+        model: selectedModel.name,
+        provider: selectedModel.provider,
+        promptLength: content.length,
+        responseLength: response.length,
+        responseTime,
+        temperature: temperature + (isRegeneration ? Math.random() * 0.2 : 0),
+        isRegeneration,
+        isSimulated: useSimulatedResponse
+      });
       
       // Immediately save the conversation with new messages
       saveConversation(conversation, finalMessages);
@@ -506,6 +523,8 @@ export function ChatInterface() {
             </Button>
             
             <div className="hidden sm:flex items-center gap-1">
+              <UsageAnalytics />
+              <ModelComparison />
               <HelpDialog />
               <SettingsDialog />
               <ThemeToggle />

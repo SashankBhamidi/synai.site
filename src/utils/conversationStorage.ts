@@ -369,7 +369,14 @@ export const exportConversations = (): void => {
 /**
  * Import conversations from file
  */
-export const importConversations = async (file: File, options: { merge: boolean } = { merge: true }): Promise<{ success: boolean, imported: number, skipped: number }> => {
+export const importConversations = async (
+  file: File, 
+  options: { 
+    merge: boolean;
+    conflictResolution?: 'skip' | 'replace' | 'rename';
+    showDialog?: boolean;
+  } = { merge: true, conflictResolution: 'skip' }
+): Promise<{ success: boolean, imported: number, skipped: number, replaced: number, renamed: number }> => {
   try {
     const fileContent = await file.text();
     const importData = JSON.parse(fileContent);
@@ -381,15 +388,43 @@ export const importConversations = async (file: File, options: { merge: boolean 
     
     const existingConversations = options.merge ? getConversations() : [];
     const existingIds = new Set(existingConversations.map(c => c.id));
+    const existingTitles = new Set(existingConversations.map(c => c.title));
     
     let imported = 0;
     let skipped = 0;
+    let replaced = 0;
+    let renamed = 0;
     
     // Process each conversation
     for (const conv of importData.conversations) {
-      if (existingIds.has(conv.id)) {
-        skipped++;
-        continue;
+      const hasConflict = existingIds.has(conv.id);
+      
+      if (hasConflict) {
+        const conflictResolution = options.conflictResolution || 'skip';
+        
+        if (conflictResolution === 'skip') {
+          skipped++;
+          continue;
+        } else if (conflictResolution === 'replace') {
+          // Remove existing conversation
+          const existingIndex = existingConversations.findIndex(c => c.id === conv.id);
+          if (existingIndex >= 0) {
+            existingConversations.splice(existingIndex, 1);
+          }
+          replaced++;
+        } else if (conflictResolution === 'rename') {
+          // Generate a unique ID and title
+          conv.id = crypto.randomUUID();
+          let newTitle = conv.title;
+          let counter = 1;
+          while (existingTitles.has(newTitle)) {
+            newTitle = `${conv.title} (${counter})`;
+            counter++;
+          }
+          conv.title = newTitle;
+          existingTitles.add(newTitle);
+          renamed++;
+        }
       }
       
       // Import conversation with proper title preservation
@@ -403,6 +438,7 @@ export const importConversations = async (file: File, options: { merge: boolean 
       console.log('Importing conversation:', conversation.title, 'ID:', conversation.id);
       
       existingConversations.push(conversation);
+      existingIds.add(conversation.id);
       
       // Import messages if they exist
       if (importData.messages[conv.id]) {
@@ -417,10 +453,12 @@ export const importConversations = async (file: File, options: { merge: boolean 
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
-        localStorage.setItem(`${MESSAGES_KEY_PREFIX}${conv.id}`, JSON.stringify(messages));
+        localStorage.setItem(`${MESSAGES_KEY_PREFIX}${conversation.id}`, JSON.stringify(messages));
       }
       
-      imported++;
+      if (!hasConflict) {
+        imported++;
+      }
     }
     
     // Sort conversations by updatedAt
@@ -433,8 +471,8 @@ export const importConversations = async (file: File, options: { merge: boolean 
     // Dispatch update event
     dispatchConversationEvent(CONVERSATION_EVENTS.UPDATED);
     
-    console.log(`Import completed: ${imported} imported, ${skipped} skipped`);
-    return { success: true, imported, skipped };
+    console.log(`Import completed: ${imported} imported, ${skipped} skipped, ${replaced} replaced, ${renamed} renamed`);
+    return { success: true, imported, skipped, replaced, renamed };
   } catch (error) {
     console.error('Error importing conversations:', error);
     throw error;

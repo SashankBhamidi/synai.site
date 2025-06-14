@@ -192,6 +192,10 @@ export function ChatSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [stats, setStats] = useState({ totalConversations: 0, totalMessages: 0 });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [conflictResolution, setConflictResolution] = useState<'skip' | 'replace' | 'rename'>('skip');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load conversations and current conversation
@@ -276,6 +280,7 @@ export function ChatSidebar() {
 
   const handleClearAll = () => {
     deleteAllConversations();
+    setIsSettingsOpen(false); // Close the dropdown
     toast.success("All conversations cleared");
   };
 
@@ -298,8 +303,26 @@ export function ChatSidebar() {
     if (!file) return;
 
     try {
-      const result = await importConversations(file, { merge: true });
-      toast.success(`Import completed: ${result.imported} imported, ${result.skipped} skipped`);
+      // First, check if there would be conflicts
+      const fileContent = await file.text();
+      const importData = JSON.parse(fileContent);
+      
+      if (!importData.conversations || !importData.messages) {
+        throw new Error('Invalid file format');
+      }
+      
+      const existingConversations = getConversations();
+      const existingIds = new Set(existingConversations.map(c => c.id));
+      const conflicts = importData.conversations.filter((conv: any) => existingIds.has(conv.id));
+      
+      if (conflicts.length > 0) {
+        // Show conflict resolution dialog
+        setPendingImportFile(file);
+        setShowImportDialog(true);
+      } else {
+        // No conflicts, import directly
+        await performImport(file, 'skip');
+      }
     } catch (error) {
       console.error('Import failed:', error);
       toast.error("Failed to import conversations. Please check the file format.");
@@ -308,6 +331,34 @@ export function ChatSidebar() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+  
+  const performImport = async (file: File, resolution: 'skip' | 'replace' | 'rename') => {
+    try {
+      const result = await importConversations(file, { 
+        merge: true, 
+        conflictResolution: resolution 
+      });
+      
+      const messages = [];
+      if (result.imported > 0) messages.push(`${result.imported} imported`);
+      if (result.skipped > 0) messages.push(`${result.skipped} skipped`);
+      if (result.replaced > 0) messages.push(`${result.replaced} replaced`);
+      if (result.renamed > 0) messages.push(`${result.renamed} renamed`);
+      
+      toast.success(`Import completed: ${messages.join(', ')}`);
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast.error("Failed to import conversations. Please check the file format.");
+    }
+  };
+  
+  const handleImportConfirm = async () => {
+    if (pendingImportFile) {
+      await performImport(pendingImportFile, conflictResolution);
+      setPendingImportFile(null);
+      setShowImportDialog(false);
     }
   };
 
@@ -358,7 +409,7 @@ export function ChatSidebar() {
               )}
             </SidebarGroupLabel>
             
-            <DropdownMenu>
+            <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                   <Settings size={12} />
@@ -475,6 +526,73 @@ export function ChatSidebar() {
         onChange={handleImport}
         className="hidden"
       />
+      
+      {/* Import Conflict Resolution Dialog */}
+      <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import Conflicts Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              Some conversations in the import file already exist. How would you like to handle conflicts?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 my-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="skip"
+                name="conflictResolution"
+                value="skip"
+                checked={conflictResolution === 'skip'}
+                onChange={(e) => setConflictResolution(e.target.value as 'skip' | 'replace' | 'rename')}
+                className="w-4 h-4"
+              />
+              <label htmlFor="skip" className="text-sm cursor-pointer">
+                <strong>Skip duplicates</strong> - Keep existing conversations, ignore duplicates
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="replace"
+                name="conflictResolution"
+                value="replace"
+                checked={conflictResolution === 'replace'}
+                onChange={(e) => setConflictResolution(e.target.value as 'skip' | 'replace' | 'rename')}
+                className="w-4 h-4"
+              />
+              <label htmlFor="replace" className="text-sm cursor-pointer">
+                <strong>Replace existing</strong> - Overwrite existing conversations with imported ones
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="rename"
+                name="conflictResolution"
+                value="rename"
+                checked={conflictResolution === 'rename'}
+                onChange={(e) => setConflictResolution(e.target.value as 'skip' | 'replace' | 'rename')}
+                className="w-4 h-4"
+              />
+              <label htmlFor="rename" className="text-sm cursor-pointer">
+                <strong>Import as copies</strong> - Create new conversations with modified names
+              </label>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowImportDialog(false);
+              setPendingImportFile(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleImportConfirm}>
+              Import
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sidebar>
   );
 }
