@@ -170,21 +170,19 @@ export const modelsByProvider: ModelGroup[] = [
 export const availableModels: AIModel[] = modelsByProvider.flatMap(group => group.models);
 
 export const getDefaultModel = (): AIModel => {
-  const savedModelId = localStorage.getItem('synthesis-ai-selected-model');
-  if (savedModelId) {
-    const foundModel = availableModels.find(model => model.id === savedModelId);
-    if (foundModel) {
-      return foundModel;
-    }
-  }
-  
-  // Default to Claude Sonnet 4 for Anthropic
+  // Always default to Claude Sonnet 4 for Anthropic on fresh loads
   const claudeSonnet4 = availableModels.find(model => model.id === 'claude-sonnet-4-20250514');
   if (claudeSonnet4) {
     return claudeSonnet4;
   }
   
-  return availableModels[0]; // Fallback to first available model
+  // Fallback to any Anthropic model if Sonnet 4 not found
+  const anthropicModel = availableModels.find(model => model.provider === 'Anthropic');
+  if (anthropicModel) {
+    return anthropicModel;
+  }
+  
+  return availableModels[0]; // Final fallback
 };
 
 export const getDefaultModelForProvider = (provider: string): AIModel => {
