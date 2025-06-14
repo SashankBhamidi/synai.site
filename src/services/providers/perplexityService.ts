@@ -59,17 +59,13 @@ export class PerplexityService extends BaseProviderService {
         }
       }
 
-      // Handle streaming
-      if (options.stream) {
-        return response;
-      }
-
       const data = await response.json();
       let content = data.choices[0]?.message?.content || '';
       
       // Clean up citation numbers and references
       content = this.cleanupReferences(content);
       
+      console.log('Perplexity response content:', content);
       return content;
     } catch (error) {
       console.error('Perplexity request failed:', error);

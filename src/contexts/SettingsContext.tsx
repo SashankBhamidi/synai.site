@@ -20,7 +20,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   
   const [streamResponses, setStreamResponses] = useState(() => {
     const saved = localStorage.getItem('synthesis-stream-responses');
-    return saved !== null ? JSON.parse(saved) : true;
+    return saved !== null ? JSON.parse(saved) : false; // Disabled by default to fix Response object issue
   });
   
   const [enableMemory, setEnableMemory] = useState(() => {

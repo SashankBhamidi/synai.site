@@ -77,17 +77,13 @@ export class OpenAIService extends BaseProviderService {
         }
       }
 
-      // Handle streaming
-      if (options.stream) {
-        return response;
-      }
-
       const data = await response.json();
       let content = data.choices[0]?.message?.content || '';
       
       // Clean up any reference numbers that might appear
       content = this.cleanupReferences(content);
       
+      console.log('OpenAI response content:', content);
       return content;
     } catch (error) {
       console.error('OpenAI request failed:', error);
