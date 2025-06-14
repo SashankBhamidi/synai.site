@@ -123,14 +123,14 @@ export const saveConversation = (conversation: Conversation, messages: Message[]
       updatedAt: new Date(),
       messageCount: messages.length,
       lastMessageAt: lastMessage?.timestamp,
-      lastMessage: lastMessage?.content?.substring(0, 100)
+      lastMessage: lastMessage?.content ? String(lastMessage.content).substring(0, 100) : undefined
     };
     
     // Update title if it's still default and we have messages
     if (conversation.title === "New conversation" && messages.length > 0) {
       const firstUserMsg = messages.find(m => m.role === "user");
-      if (firstUserMsg) {
-        updatedConversation.title = generateConversationTitle(firstUserMsg.content);
+      if (firstUserMsg && firstUserMsg.content) {
+        updatedConversation.title = generateConversationTitle(String(firstUserMsg.content));
       }
     }
     

@@ -56,12 +56,21 @@ export class AnthropicService extends BaseProviderService {
   }
 
   private convertMessagesToAnthropicFormat(messages: ApiMessage[]) {
-    return messages
+    console.log('Converting messages to Anthropic format:', JSON.stringify(messages, null, 2));
+    
+    const convertedMessages = messages
       .filter(msg => msg.role !== 'system') // Anthropic doesn't use system messages in the messages array
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
-        content: msg.content
-      }));
+      .map(msg => {
+        // Ensure content is always a string for Anthropic
+        const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+        return {
+          role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+          content: content
+        };
+      });
+    
+    console.log('Converted to Anthropic format:', JSON.stringify(convertedMessages, null, 2));
+    return convertedMessages;
   }
 
   private cleanupReferences(content: string): string {
