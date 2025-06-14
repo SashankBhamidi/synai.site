@@ -28,13 +28,29 @@ export class AnthropicService extends BaseProviderService {
       // Convert messages to Anthropic format
       const anthropicMessages = this.convertMessagesToAnthropicFormat(options.messages || []);
       
-      console.log('Sending request to Anthropic API:', { model, messageCount: anthropicMessages.length });
+      // Validate messages before sending
+      if (anthropicMessages.length === 0) {
+        // If no messages, create a simple user message
+        anthropicMessages.push({
+          role: 'user',
+          content: options.message || 'Hello'
+        });
+      }
+      
+      // Ensure alternating user/assistant pattern (Anthropic requirement)
+      const validatedMessages = this.validateMessageOrder(anthropicMessages);
+      
+      console.log('Sending request to Anthropic API:', { 
+        model, 
+        messageCount: validatedMessages.length,
+        messages: JSON.stringify(validatedMessages, null, 2)
+      });
       
       const response = await this.client.messages.create({
         model: model,
         max_tokens: 4096,
         system: 'You are Synthesis AI, a helpful AI assistant. You remember previous messages in our conversation and can refer to them. Only mention your name when directly asked "who are you" or when greeting new users. Never identify as Claude, Anthropic or any other name. Provide varied and thoughtful responses.',
-        messages: anthropicMessages,
+        messages: validatedMessages,
         temperature: options.temperature || 0.7,
       });
 
@@ -63,14 +79,61 @@ export class AnthropicService extends BaseProviderService {
       .map(msg => {
         // Ensure content is always a string for Anthropic
         const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+        
+        // Validate content is not empty
+        if (!content.trim()) {
+          console.warn('Empty message content detected, using fallback');
+          return {
+            role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+            content: msg.role === 'assistant' ? 'I understand.' : 'Hello'
+          };
+        }
+        
         return {
           role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
           content: content
         };
-      });
+      })
+      .filter(msg => msg.content.trim().length > 0); // Remove any empty messages
     
     console.log('Converted to Anthropic format:', JSON.stringify(convertedMessages, null, 2));
     return convertedMessages;
+  }
+
+  private validateMessageOrder(messages: any[]) {
+    // Anthropic requires messages to start with user and alternate user/assistant
+    const validatedMessages = [];
+    
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
+      
+      // First message must be from user
+      if (i === 0 && message.role !== 'user') {
+        // Skip or convert first assistant message
+        continue;
+      }
+      
+      // Check for consecutive messages from same role
+      if (validatedMessages.length > 0) {
+        const lastMessage = validatedMessages[validatedMessages.length - 1];
+        if (lastMessage.role === message.role) {
+          // Skip consecutive messages from same role
+          continue;
+        }
+      }
+      
+      validatedMessages.push(message);
+    }
+    
+    // Ensure we have at least one user message
+    if (validatedMessages.length === 0) {
+      validatedMessages.push({
+        role: 'user',
+        content: 'Hello'
+      });
+    }
+    
+    return validatedMessages;
   }
 
   private cleanupReferences(content: string): string {
