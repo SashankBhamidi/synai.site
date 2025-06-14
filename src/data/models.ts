@@ -48,14 +48,6 @@ export const modelsByProvider: ModelGroup[] = [
         category: "Reasoning",
         description: "Smaller, faster version of O1 for quick reasoning tasks",
       },
-      // Legacy Models
-      {
-        id: "gpt-3.5-turbo",
-        name: "GPT-3.5 Turbo",
-        provider: "OpenAI",
-        category: "Legacy",
-        description: "Affordable, good for chat and light reasoning",
-      }
     ],
   },
   {
@@ -76,21 +68,7 @@ export const modelsByProvider: ModelGroup[] = [
         category: "Claude 4",
         description: "High-performance model with high intelligence and balanced performance",
       },
-      // Claude 3.7 Series
-      {
-        id: "claude-3-7-sonnet-20250219",
-        name: "Claude Sonnet 3.7",
-        provider: "Anthropic",
-        category: "Claude 3.7",
-        description: "High-performance model with early extended thinking capabilities",
-      },
-      {
-        id: "claude-3-7-sonnet-latest",
-        name: "Claude Sonnet 3.7 (Latest)",
-        provider: "Anthropic", 
-        category: "Claude 3.7",
-        description: "Latest Sonnet 3.7, best for advanced reasoning and coding",
-      },
+      // Claude 3.5 Series - Current Generation
       // Claude 3.5 Series
       {
         id: "claude-3-5-sonnet-20241022",
@@ -127,35 +105,6 @@ export const modelsByProvider: ModelGroup[] = [
         category: "Claude 3.5",
         description: "Latest Haiku 3.5, better reasoning while still fast",
       },
-      // Claude 3 Series - Legacy
-      {
-        id: "claude-3-opus-20240229",
-        name: "Claude Opus 3",
-        provider: "Anthropic",
-        category: "Claude 3",
-        description: "Powerful model for complex tasks with top-level intelligence",
-      },
-      {
-        id: "claude-3-opus-latest",
-        name: "Claude Opus 3 (Latest)",
-        provider: "Anthropic",
-        category: "Claude 3",
-        description: "Latest Claude 3 Opus with top-level intelligence and understanding",
-      },
-      {
-        id: "claude-3-sonnet-20240229",
-        name: "Claude Sonnet 3",
-        provider: "Anthropic",
-        category: "Claude 3",
-        description: "Balanced performance/cost for general tasks",
-      },
-      {
-        id: "claude-3-haiku-20240307",
-        name: "Claude Haiku 3",
-        provider: "Anthropic",
-        category: "Claude 3",
-        description: "Fast and compact model for near-instant responsiveness",
-      }
     ],
   },
   {
@@ -199,13 +148,20 @@ export const modelsByProvider: ModelGroup[] = [
         category: "Reasoning",
         description: "Fast, real-time reasoning model designed for quick problem-solving with search",
       },
-      // Offline Models
+      // Chat Models
       {
-        id: "r1-1776",
-        name: "R1-1776",
+        id: "llama-3.1-sonar-small-128k-chat",
+        name: "Llama 3.1 Sonar Small Chat",
         provider: "Perplexity",
-        category: "Offline",
-        description: "DeepSeek R1 model for uncensored, unbiased, and factual information without search",
+        category: "Chat",
+        description: "Lightweight chat model without search capabilities",
+      },
+      {
+        id: "llama-3.1-sonar-large-128k-chat",
+        name: "Llama 3.1 Sonar Large Chat",
+        provider: "Perplexity",
+        category: "Chat",
+        description: "Advanced chat model without search capabilities",
       },
     ],
   }

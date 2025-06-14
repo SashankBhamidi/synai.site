@@ -11,7 +11,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { HelpDialog } from "./HelpDialog";
 import { WelcomeTooltip } from "./WelcomeTooltip";
 import { ModelComparison } from "./ModelComparison";
-import { UsageAnalytics } from "./UsageAnalytics";
+import { UsageAnalytics } from "./UsageAnalytics";\nimport { SuggestionPrompts } from "./SuggestionPrompts";
 import { getDefaultModel, getDefaultModelForProvider } from "@/data/models";
 import { recordMessage } from "@/utils/usageAnalytics";
 import { Button } from "@/components/ui/button";
@@ -603,22 +603,38 @@ export function ChatInterface() {
               </div>
             </div>
             
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleClearChat}
-                className="rounded-full h-8 w-8"
-                title="Clear chat"
-              >
-                <Trash2 size={14} />
-              </Button>
+            <div className="flex items-center gap-2">
+              {/* Chat Actions */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleClearChat}
+                  className="rounded-full h-8 w-8"
+                  title="Clear chat"
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
               
-              <UsageAnalytics />
-              <ModelComparison />
-              <HelpDialog />
-              <SettingsDialog />
-              <ThemeToggle />
+              {/* Divider */}
+              <div className="w-px h-6 bg-border" />
+              
+              {/* Analysis Tools */}
+              <div className="flex items-center gap-1">
+                <UsageAnalytics />
+                <ModelComparison />
+              </div>
+              
+              {/* Divider */}
+              <div className="w-px h-6 bg-border" />
+              
+              {/* Settings & Theme */}
+              <div className="flex items-center gap-1">
+                <HelpDialog />
+                <SettingsDialog />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </div>
@@ -638,19 +654,20 @@ export function ChatInterface() {
             <p className="text-muted-foreground max-w-lg text-base sm:text-lg leading-relaxed">
               Engage with powerful AI models from multiple providers. Ask questions, get insights, and explore ideas.
             </p>
-            <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
-                <h3 className="font-semibold text-sm mb-2">Multi-Provider</h3>
-                <p className="text-xs text-muted-foreground">Choose from OpenAI, Anthropic, and Perplexity models</p>
-              </div>
-              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
-                <h3 className="font-semibold text-sm mb-2">Smart Memory</h3>
-                <p className="text-xs text-muted-foreground">Conversation context is maintained across messages</p>
-              </div>
-              <div className="p-4 rounded-lg bg-secondary/30 border border-border/50">
-                <h3 className="font-semibold text-sm mb-2">Customizable</h3>
-                <p className="text-xs text-muted-foreground">Adjust temperature, streaming, and other settings</p>
-              </div>
+            <div className="mt-6 sm:mt-8 w-full max-w-4xl">
+              <SuggestionPrompts 
+                selectedModel={selectedModel}
+                onSelectPrompt={(prompt) => {
+                  setInputValue(prompt);
+                  // Auto-focus the input after setting the prompt
+                  setTimeout(() => {
+                    const textarea = document.querySelector('textarea');
+                    if (textarea) {
+                      textarea.focus();
+                    }
+                  }, 100);
+                }}
+              />
             </div>
           </div>
         ) : (
