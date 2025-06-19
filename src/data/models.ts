@@ -112,48 +112,49 @@ export const modelsByProvider: ModelGroup[] = [
     models: [
       // Search Models (with real-time web access)
       {
-        id: "llama-3.1-sonar-large-128k-online",
-        name: "Sonar Large Online",
+        id: "sonar-pro",
+        name: "Sonar Pro",
         provider: "Perplexity",
         category: "Search",
-        description: "Advanced search model with real-time web access and citations",
+        description: "Advanced search, long-form content, complex reasoning (200k context)",
       },
       {
-        id: "llama-3.1-sonar-small-128k-online",
-        name: "Sonar Small Online",
+        id: "sonar",
+        name: "Sonar",
         provider: "Perplexity",
         category: "Search",
-        description: "Faster, cost-effective search model with web access",
+        description: "Lightweight search, cost-effective, quick queries (128k context)",
+      },
+      // Reasoning Models (with search)
+      {
+        id: "sonar-reasoning-pro",
+        name: "Sonar Reasoning Pro",
+        provider: "Perplexity",
+        category: "Reasoning",
+        description: "Premier reasoning, multi-step problem solving with search (128k context)",
       },
       {
-        id: "llama-3.1-sonar-huge-128k-online",
-        name: "Sonar Huge Online",
+        id: "sonar-reasoning",
+        name: "Sonar Reasoning",
         provider: "Perplexity",
-        category: "Search",
-        description: "Most capable search model with comprehensive web research",
+        category: "Reasoning",
+        description: "Fast real-time reasoning with search capabilities (128k context)",
+      },
+      // Research Models
+      {
+        id: "sonar-deep-research",
+        name: "Sonar Deep Research",
+        provider: "Perplexity",
+        category: "Research",
+        description: "Expert-level research, comprehensive reports with web access (128k context)",
       },
       // Chat Models (without web access)
       {
-        id: "llama-3.1-sonar-large-128k-chat",
-        name: "Sonar Large Chat",
+        id: "r1-1776",
+        name: "R1-1776",
         provider: "Perplexity",
         category: "Chat",
-        description: "Advanced chat model without search capabilities",
-      },
-      {
-        id: "llama-3.1-sonar-small-128k-chat",
-        name: "Sonar Small Chat",
-        provider: "Perplexity",
-        category: "Chat",
-        description: "Lightweight chat model without search capabilities",
-      },
-      // Legacy models (keeping for compatibility)
-      {
-        id: "sonar-pro",
-        name: "Sonar Pro (Legacy)",
-        provider: "Perplexity",
-        category: "Search",
-        description: "Legacy model - use Sonar Large Online instead",
+        description: "Offline chat model, creative content without search (128k context)",
       },
     ],
   }
@@ -188,7 +189,7 @@ export const getDefaultModelForProvider = (provider: string): AIModel => {
       return availableModels.find(model => model.id === 'gpt-4o') || 
              availableModels.find(model => model.provider === 'OpenAI')!;
     case 'perplexity':
-      return availableModels.find(model => model.id === 'llama-3.1-sonar-large-128k-online') || 
+      return availableModels.find(model => model.id === 'sonar-pro') || 
              availableModels.find(model => model.provider === 'Perplexity')!;
     default:
       return getDefaultModel();

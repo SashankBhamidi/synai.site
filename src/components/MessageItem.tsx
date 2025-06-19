@@ -69,7 +69,9 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
   // Check if this is a search-enabled model response
   const isSearchModel = useMemo(() => {
     return message.model?.provider === 'Perplexity' && 
-           message.model?.category === 'Search';
+           (message.model?.category === 'Search' || 
+            message.model?.category === 'Reasoning' || 
+            message.model?.category === 'Research');
   }, [message.model]);
 
   // Memoize markdown components to prevent re-rendering

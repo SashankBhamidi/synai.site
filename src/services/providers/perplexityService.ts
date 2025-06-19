@@ -9,7 +9,7 @@ export class PerplexityService extends BaseProviderService {
   async sendRequest(options: AiRequestOptions): Promise<string> {
     this.validateApiKey();
     
-    const model = options.model || 'llama-3.1-sonar-large-128k-online';
+    const model = options.model || 'sonar-pro';
     
     try {
       // If using simulated response (no API key or demo mode)
