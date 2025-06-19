@@ -43,9 +43,7 @@ import {
   MoreHorizontal,
   Edit2,
   Calendar,
-  Folder,
-  Star,
-  Pin
+  Folder
 } from "lucide-react";
 import { toast } from "sonner";
 import { Conversation, ConversationFolder } from "@/types";
@@ -78,132 +76,8 @@ import {
 } from "@/utils/folderStorage";
 import { ConversationFilters, FilterState } from "./ConversationFilters";
 import { EnhancedConversationItem } from "./EnhancedConversationItem";
-import { AdvancedSearch } from "./AdvancedSearch";
 
-interface ConversationItemProps {
-  conversation: Conversation;
-  isActive: boolean;
-  onSelect: (conversation: Conversation) => void;
-  onRename: (id: string, newTitle: string) => void;
-  onDelete: (id: string) => void;
-}
-
-function ConversationItem({ conversation, isActive, onSelect, onRename, onDelete }: ConversationItemProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(conversation.title);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleEdit = () => {
-    setEditTitle(conversation.title);
-    setIsEditing(true);
-  };
-
-  const handleSave = () => {
-    const newTitle = editTitle.trim();
-    if (newTitle && newTitle !== conversation.title) {
-      onRename(conversation.id, newTitle);
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditTitle(conversation.title);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
-  };
-
-  return (
-    <SidebarMenuItem>
-      <div className={`group flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors ${
-        isActive ? 'bg-accent' : ''
-      }`}>
-        <div 
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => !isEditing && onSelect(conversation)}
-        >
-          {isEditing ? (
-            <Input
-              ref={inputRef}
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleSave}
-              className="h-6 text-sm px-1"
-            />
-          ) : (
-            <div className="space-y-1">
-              <div className="text-sm font-medium truncate">
-                {conversation.title}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formatDate(conversation.updatedAt)}
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal size={12} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(); }}>
-                <Edit2 size={14} className="mr-2" />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={(e) => { e.stopPropagation(); onDelete(conversation.id); }}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 size={14} className="mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </SidebarMenuItem>
-  );
-}
+// ConversationItem component removed - now using EnhancedConversationItem only
 
 export function ChatSidebar() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -222,8 +96,6 @@ export function ChatSidebar() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [conflictResolution, setConflictResolution] = useState<'skip' | 'replace' | 'rename'>('skip');
-  const [showFolderDialog, setShowFolderDialog] = useState(false);
-  const [folderName, setFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load conversations, folders and current conversation
@@ -388,18 +260,14 @@ export function ChatSidebar() {
   };
 
   const handleCreateFolderClick = () => {
-    setShowFolderDialog(true);
-    setFolderName("");
-  };
-
-  const handleCreateFolder = () => {
-    if (folderName.trim()) {
-      createFolder(folderName.trim());
-      toast.success(`Created folder: ${folderName.trim()}`);
-      setShowFolderDialog(false);
-      setFolderName("");
+    // Simplified folder creation - just show a simple prompt
+    const name = window.prompt('Enter folder name:');
+    if (name && name.trim()) {
+      createFolder(name.trim());
+      toast.success(`Created folder: ${name.trim()}`);
     }
   };
+
 
   const handleClearAll = () => {
     deleteAllConversations();
@@ -491,41 +359,39 @@ export function ChatSidebar() {
       
       <SidebarHeader className="px-3 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-            <MessagesSquare size={20} className="text-primary flex-shrink-0" />
-            <h1 className="text-base font-semibold truncate">Synthesis AI</h1>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <MessagesSquare size={18} className="text-primary flex-shrink-0" />
+            <h1 className="text-sm font-semibold truncate">Conversations</h1>
           </div>
           
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full flex-shrink-0"
+              className="h-6 w-6 rounded-md flex-shrink-0 hover:bg-accent"
               onClick={handleCreateFolderClick}
-              title="New folder"
+              title="Create folder"
             >
-              <Folder size={14} />
-              <span className="sr-only">New folder</span>
+              <Folder size={12} />
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               size="icon"
-              className="h-7 w-7 rounded-full flex-shrink-0"
+              className="h-6 w-6 rounded-md flex-shrink-0"
               onClick={handleNewChat}
-              title="New chat"
+              title="New conversation"
             >
-              <Plus size={14} />
-              <span className="sr-only">New chat</span>
+              <Plus size={12} />
             </Button>
           </div>
         </div>
         
-        {/* Search */}
-        <div className="mt-2 space-y-3">
+        {/* Local Search & Filters */}
+        <div className="mt-2 space-y-2">
           <div className="relative">
             <Search size={14} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search conversations..."
+              placeholder="Filter conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 h-8 text-sm"
@@ -538,23 +404,16 @@ export function ChatSidebar() {
             availableTags={getAllTags()}
             availableFolders={folders}
           />
-          
-          <AdvancedSearch 
-            onSelectConversation={(conversation) => {
-              setCurrentConversation(conversation.id);
-              console.log('Selected conversation from advanced search:', conversation.id);
-            }}
-          />
         </div>
       </SidebarHeader>
       
       <SidebarContent className="overflow-hidden">
         <SidebarGroup>
-          <div className="flex items-center justify-between px-2 mb-2">
-            <SidebarGroupLabel className="flex items-center gap-2">
-              <span>Conversations</span>
-              {conversations.length > 0 && (
-                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+          <div className="flex items-center justify-between px-2 mb-3">
+            <SidebarGroupLabel className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <span>Recent Chats</span>
+              {filteredConversations.length > 0 && (
+                <Badge variant="secondary" className="text-xs px-1.5 py-0 h-4">
                   {filteredConversations.length}
                 </Badge>
               )}
@@ -562,34 +421,29 @@ export function ChatSidebar() {
             
             <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <Settings size={12} />
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-accent">
+                  <Settings size={10} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'date'})}>
                   <Calendar size={14} className="mr-2" />
                   Sort by Date
-                  {filters.sortBy === 'date' && <span className="ml-auto">✓</span>}
+                  {filters.sortBy === 'date' && <span className="ml-auto text-primary">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'name'})}>
                   <MessagesSquare size={14} className="mr-2" />
                   Sort by Name
-                  {filters.sortBy === 'name' && <span className="ml-auto">✓</span>}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilters({...filters, sortBy: 'favorites'})}>
-                  <Star size={14} className="mr-2" />
-                  Sort by Favorites
-                  {filters.sortBy === 'favorites' && <span className="ml-auto">✓</span>}
+                  {filters.sortBy === 'name' && <span className="ml-auto text-primary">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExport}>
                   <Download size={14} className="mr-2" />
-                  Export All
+                  Export Conversations
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleImportClick}>
                   <Upload size={14} className="mr-2" />
-                  Import
+                  Import Conversations
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialog>
@@ -599,7 +453,7 @@ export function ChatSidebar() {
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 size={14} className="mr-2" />
-                      Clear All
+                      Clear All Conversations
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -627,17 +481,18 @@ export function ChatSidebar() {
           
           <SidebarGroupContent className="flex-1 overflow-y-auto">
             {filteredConversations.length === 0 ? (
-              <div className="text-center text-muted-foreground text-sm py-8">
+              <div className="text-center text-muted-foreground text-sm py-12">
                 {searchQuery ? (
                   <>
-                    <Search size={32} className="mx-auto mb-2 opacity-50" />
-                    No conversations found for "{searchQuery}"
+                    <Search size={24} className="mx-auto mb-3 opacity-40" />
+                    <p>No matches for "{searchQuery}"</p>
+                    <p className="text-xs mt-1">Try a different search term</p>
                   </>
                 ) : (
                   <>
-                    <MessagesSquare size={32} className="mx-auto mb-2 opacity-50" />
-                    No conversations yet.<br />
-                    Start chatting to create your first conversation.
+                    <MessagesSquare size={24} className="mx-auto mb-3 opacity-40" />
+                    <p>No conversations yet</p>
+                    <p className="text-xs mt-1">Click the + button to start chatting</p>
                   </>
                 )}
               </div>
@@ -673,19 +528,14 @@ export function ChatSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-3 py-2 border-t">
-        {stats.totalConversations > 0 && (
-          <div className="text-xs text-muted-foreground space-y-1">
-            <div className="flex justify-between">
-              <span>Conversations:</span>
-              <span>{stats.totalConversations}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Messages:</span>
-              <span>{stats.totalMessages}</span>
-            </div>
-          </div>
-        )}
+      <SidebarFooter className="px-3 py-2 border-t bg-muted/30">
+        <div className="text-xs text-muted-foreground text-center">
+          {stats.totalConversations > 0 ? (
+            <span>{stats.totalConversations} conversations • {stats.totalMessages} messages</span>
+          ) : (
+            <span>No conversations yet</span>
+          )}
+        </div>
       </SidebarFooter>
 
       {/* Hidden file input for import */}
@@ -764,43 +614,6 @@ export function ChatSidebar() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Folder Creation Dialog */}
-      <AlertDialog open={showFolderDialog} onOpenChange={setShowFolderDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Create New Folder</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter a name for the new folder to organize your conversations.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <Input
-              placeholder="Folder name..."
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleCreateFolder();
-                }
-              }}
-              className="w-full"
-              autoFocus
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowFolderDialog(false);
-              setFolderName("");
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleCreateFolder} disabled={!folderName.trim()}>
-              Create
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Sidebar>
   );
 }
