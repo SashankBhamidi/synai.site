@@ -16,8 +16,12 @@ export function HelpDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <HelpCircle size={20} />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full relative group hover:bg-accent transition-colors"
+        >
+          <HelpCircle size={18} className="group-hover:scale-110 transition-transform" />
           <span className="sr-only">Help</span>
         </Button>
       </DialogTrigger>

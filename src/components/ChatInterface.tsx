@@ -517,20 +517,20 @@ export function ChatInterface() {
     <div className="flex flex-col h-screen max-h-screen overflow-hidden relative">
       {/* Fixed Header */}
       <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-10">
-        {/* Mobile Header - Simplified */}
+        {/* Mobile Header */}
         <div className="sm:hidden">
-          <div className="flex items-center justify-between p-2 min-h-[48px]">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center justify-between px-3 py-3 min-h-[56px]">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <Button
                 variant="ghost" 
                 size="icon"
                 onClick={toggleSidebar}
-                className="h-7 w-7 rounded-full flex-shrink-0"
+                className="h-8 w-8 rounded-full flex-shrink-0"
                 title="Toggle Sidebar"
               >
-                <MessagesSquare size={16} />
+                <MessagesSquare size={18} />
               </Button>
-              <h2 className="text-sm font-medium">
+              <h2 className="text-base font-semibold">
                 Synthesis AI
               </h2>
             </div>
@@ -542,7 +542,7 @@ export function ChatInterface() {
           </div>
           
           {/* Mobile Second Row - Model Selection */}
-          <div className="flex items-center gap-2 px-2 pb-2">
+          <div className="flex items-center gap-3 px-3 pb-3 border-t border-border/50">
             <div className="flex-1">
               <ProviderSelector 
                 selectedProvider={selectedProvider}
@@ -559,23 +559,27 @@ export function ChatInterface() {
         </div>
         
         {/* Desktop Header */}
-        <div className="hidden sm:flex items-center justify-between p-4 min-h-[64px]">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <MessagesSquare size={20} className="text-primary flex-shrink-0" />
-            <h1 className="text-lg font-medium">Synthesis AI</h1>
+        <div className="hidden sm:flex items-center justify-between px-6 py-4 min-h-[68px]">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <MessagesSquare size={20} className="text-primary" />
+              </div>
+              <h1 className="text-xl font-semibold">Synthesis AI</h1>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {/* Model Selection */}
-            <div className="flex items-center gap-2">
-              <div className="w-36">
+            <div className="flex items-center gap-3">
+              <div className="w-40">
                 <ProviderSelector 
                   selectedProvider={selectedProvider}
                   onSelectProvider={handleProviderChange}
                 />
               </div>
               
-              <div className="w-36">
+              <div className="w-40">
                 <ModelSelector 
                   selectedModel={selectedModel}
                   onSelectModel={handleModelChange}
@@ -584,10 +588,10 @@ export function ChatInterface() {
             </div>
             
             {/* Divider */}
-            <div className="w-px h-6 bg-border" />
+            <div className="w-px h-8 bg-border/50" />
             
             {/* Tools & Settings */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <UsageAnalytics />
               <ModelComparison />
               <HelpDialog />

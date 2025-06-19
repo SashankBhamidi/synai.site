@@ -33,8 +33,12 @@ export function SettingsDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Settings size={20} />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full relative group hover:bg-accent transition-colors"
+        >
+          <Settings size={18} className="group-hover:scale-110 transition-transform" />
           <span className="sr-only">Settings</span>
         </Button>
       </DialogTrigger>
