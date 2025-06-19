@@ -427,7 +427,7 @@ export function ChatInterface() {
       messagesContainerRef.current.scrollTop = 0;
     }
     
-    toast.success("Chat cleared");
+    // Removed toast - cleared state is visually obvious
   };
 
   const handleInputChange = (value: string) => {
@@ -458,7 +458,7 @@ export function ChatInterface() {
       }
     }
     
-    toast.success("Message updated - generating new response...");
+    // Removed toast - action is self-evident from UI changes
     
     // Regenerate AI response with the edited message
     await handleSendMessage(newContent, false, newMessages);
@@ -477,7 +477,7 @@ export function ChatInterface() {
       }
     }
     
-    toast.success("Message deleted");
+    // Removed toast - message disappearance is visual feedback enough
   }, [currentConversationId, messages]);
 
   const handleModelChange = (model: AIModel) => {
@@ -572,14 +572,14 @@ export function ChatInterface() {
           <div className="flex items-center gap-4">
             {/* Model Selection */}
             <div className="flex items-center gap-3">
-              <div className="w-40">
+              <div className="w-32 min-w-32">
                 <ProviderSelector 
                   selectedProvider={selectedProvider}
                   onSelectProvider={handleProviderChange}
                 />
               </div>
               
-              <div className="w-40">
+              <div className="w-44 min-w-44">
                 <ModelSelector 
                   selectedModel={selectedModel}
                   onSelectModel={handleModelChange}
@@ -604,7 +604,7 @@ export function ChatInterface() {
       
       {/* Scrollable Content */}
       <div 
-        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0 custom-scrollbar"
+        className={`flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0 ${messages.length > 0 ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}
         ref={messagesContainerRef}
       >
         {messages.length === 0 ? (

@@ -30,7 +30,6 @@ import {
   Moon, 
   Contrast,
   Type,
-  Layers,
   Sparkles,
   Check
 } from "lucide-react";
@@ -41,8 +40,6 @@ interface ThemeSettings {
   accentColor: string;
   fontSize: number;
   fontFamily: string;
-  borderRadius: number;
-  density: 'comfortable' | 'compact' | 'spacious';
   animations: boolean;
   highContrast: boolean;
 }
@@ -100,7 +97,7 @@ export function ThemeCustomizer() {
     setSettings(newSettings);
     localStorage.setItem('synthesis-theme-settings', JSON.stringify(newSettings));
     applyThemeSettings(newSettings);
-    toast.success('Theme settings saved');
+    // Removed toast - settings apply immediately, no need for notification
   };
 
   const applyThemeSettings = (settings: ThemeSettings) => {
@@ -163,8 +160,6 @@ export function ThemeCustomizer() {
       accentColor: 'purple',
       fontSize: 16,
       fontFamily: 'system',
-      borderRadius: 8,
-      density: 'comfortable',
       animations: true,
       highContrast: false
     };
@@ -283,60 +278,6 @@ export function ThemeCustomizer() {
               </div>
             </div>
 
-            {/* Border Radius */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary rounded" />
-                Border Radius
-              </Label>
-              <div className="space-y-3">
-                <Slider
-                  value={[settings.borderRadius]}
-                  onValueChange={([value]) => handleSettingChange('borderRadius', value)}
-                  max={20}
-                  min={0}
-                  step={2}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Sharp</span>
-                  <span className="font-medium">{settings.borderRadius}px</span>
-                  <span>Rounded</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Density */}
-            {/* Interface Density */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <Layers size={18} />
-                Interface Density
-              </Label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: 'compact', label: 'Compact', desc: 'More content' },
-                  { value: 'comfortable', label: 'Comfortable', desc: 'Balanced' },
-                  { value: 'spacious', label: 'Spacious', desc: 'More breathing room' }
-                ].map(option => (
-                  <Button
-                    key={option.value}
-                    variant={settings.density === option.value ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => handleSettingChange('density', option.value)}
-                    className="flex flex-col items-center gap-2 h-16 relative"
-                  >
-                    <span className="text-sm font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.desc}</span>
-                    {settings.density === option.value && (
-                      <div className="absolute top-1 right-1">
-                        <Check size={12} className="text-primary" />
-                      </div>
-                    )}
-                  </Button>
-                ))}
-              </div>
-            </div>
           </TabsContent>
           
           <TabsContent value="typography" className="overflow-y-auto max-h-[50vh] space-y-8 mt-6">

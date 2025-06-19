@@ -16,7 +16,7 @@ export function CopyButton({ text, className = "" }: CopyButtonProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("Copied to clipboard");
+      // Removed toast - visual feedback from icon change is sufficient
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast.error("Failed to copy");

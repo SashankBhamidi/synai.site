@@ -35,7 +35,8 @@ import {
   Star,
   TrendingUp,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  GitCompare
 } from "lucide-react";
 import { toast } from "sonner";
 import { AIModel } from "@/types";
@@ -339,7 +340,7 @@ export function ModelComparison() {
           size="icon" 
           className="rounded-full relative group hover:bg-accent transition-colors"
         >
-          <BarChart3 size={18} className="group-hover:scale-110 transition-transform" />
+          <GitCompare size={18} className="group-hover:scale-110 transition-transform" />
           <span className="sr-only">Compare Models</span>
         </Button>
       </DialogTrigger>
@@ -347,7 +348,7 @@ export function ModelComparison() {
         <DialogHeader className="pb-6 border-b">
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <div className="p-2 bg-primary/10 rounded-lg">
-              <BarChart3 size={24} className="text-primary" />
+              <GitCompare size={24} className="text-primary" />
             </div>
             Model Comparison Lab
           </DialogTitle>

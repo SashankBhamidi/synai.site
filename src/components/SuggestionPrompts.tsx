@@ -210,22 +210,22 @@ export function SuggestionPrompts({ selectedModel, onSelectPrompt }: SuggestionP
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto">
         {prompts.map((suggestion, index) => {
           const IconComponent = suggestion.icon;
           return (
             <Button
               key={index}
               variant="outline"
-              className="h-auto p-4 text-left justify-start hover:bg-accent/50 transition-colors"
+              className="h-auto p-3 text-left justify-start hover:bg-accent/50 transition-colors"
               onClick={() => onSelectPrompt(suggestion.prompt)}
             >
-              <div className="flex items-start gap-3 w-full">
-                <IconComponent size={20} className="text-primary mt-1 flex-shrink-0" />
+              <div className="flex items-center gap-3 w-full">
+                <IconComponent size={16} className="text-primary flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm mb-1">{suggestion.title}</div>
-                  <div className="text-xs text-muted-foreground line-clamp-2">
-                    {suggestion.prompt}
+                  <div className="font-medium text-sm truncate">{suggestion.title}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {suggestion.prompt.length > 60 ? suggestion.prompt.slice(0, 60) + '...' : suggestion.prompt}
                   </div>
                 </div>
               </div>
