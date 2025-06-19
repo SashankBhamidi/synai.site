@@ -22,7 +22,7 @@ export function ModelSelector({ selectedModel, onSelectModel }: ModelSelectorPro
   
   // Get models grouped by category for the current provider
   const modelsByCategory = getModelsByCategory(selectedModel.provider);
-  const categories = Object.keys(modelsByCategory).sort();
+  const categories = Object.keys(modelsByCategory); // Already ordered by getModelsByCategory
 
   const handleSelectModel = (model: AIModel) => {
     onSelectModel(model);

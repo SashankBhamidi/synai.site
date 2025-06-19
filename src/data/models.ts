@@ -243,10 +243,17 @@ export const getAvailableModelsForProvider = (provider: string): AIModel[] => {
   return group?.models || [];
 };
 
+// Define category ordering for each provider
+const categoryOrder: Record<string, string[]> = {
+  'OpenAI': ['Flagship Chat', 'Multimodal', 'Reasoning', 'Reasoning Pro', 'Reasoning Mini', 'Cost-Optimized'],
+  'Anthropic': ['Claude 4', 'Claude 3.7', 'Claude 3.5', 'Claude 3'],
+  'Perplexity': ['Search', 'Reasoning', 'Research', 'Chat']
+};
+
 // Get models grouped by category for a specific provider
 export const getModelsByCategory = (provider: string): Record<string, AIModel[]> => {
   const allModels = getAvailableModelsForProvider(provider);
-  return allModels.reduce<Record<string, AIModel[]>>((acc, model) => {
+  const grouped = allModels.reduce<Record<string, AIModel[]>>((acc, model) => {
     const category = model.category || 'Other';
     if (!acc[category]) {
       acc[category] = [];
@@ -254,4 +261,23 @@ export const getModelsByCategory = (provider: string): Record<string, AIModel[]>
     acc[category].push(model);
     return acc;
   }, {});
+  
+  // Return in the defined order for this provider
+  const orderedCategories = categoryOrder[provider] || Object.keys(grouped).sort();
+  const orderedGrouped: Record<string, AIModel[]> = {};
+  
+  orderedCategories.forEach(category => {
+    if (grouped[category]) {
+      orderedGrouped[category] = grouped[category];
+    }
+  });
+  
+  // Add any categories not in the predefined order
+  Object.keys(grouped).forEach(category => {
+    if (!orderedGrouped[category]) {
+      orderedGrouped[category] = grouped[category];
+    }
+  });
+  
+  return orderedGrouped;
 };
