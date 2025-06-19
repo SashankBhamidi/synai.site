@@ -26,13 +26,15 @@ interface FileAttachmentComponentProps {
   onAttachmentsChange: (attachments: FileAttachment[]) => void;
   maxAttachments?: number;
   disabled?: boolean;
+  showButton?: boolean; // New prop to control whether to show the button
 }
 
 export function FileAttachmentComponent({ 
   attachments, 
   onAttachmentsChange, 
   maxAttachments = 10,
-  disabled = false 
+  disabled = false,
+  showButton = true
 }: FileAttachmentComponentProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -224,27 +226,29 @@ export function FileAttachmentComponent({
         accept="image/*,.txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.py,.html,.css,.pdf,.doc,.docx"
       />
       
-      {/* Attachment Button */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={handleFileSelect}
-        disabled={disabled || isProcessing || attachments.length >= maxAttachments}
-        className={cn(
-          "rounded-full transition-all duration-200 hover:bg-accent hover:scale-105",
-          isDragOver && "bg-primary/20 border-primary scale-110",
-          attachments.length > 0 && "text-primary bg-primary/10"
-        )}
-        title={attachments.length > 0 ? `${attachments.length} file${attachments.length > 1 ? 's' : ''} attached` : "Attach files"}
-      >
-        <Paperclip size={18} />
-        {attachments.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium">
-            {attachments.length}
-          </span>
-        )}
-      </Button>
+      {/* Attachment Button - only show if showButton is true */}
+      {showButton && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleFileSelect}
+          disabled={disabled || isProcessing || attachments.length >= maxAttachments}
+          className={cn(
+            "rounded-full h-10 w-10 transition-all duration-200 hover:bg-accent hover:scale-105",
+            isDragOver && "bg-primary/20 border-primary scale-110",
+            attachments.length > 0 && "text-primary bg-primary/10"
+          )}
+          title={attachments.length > 0 ? `${attachments.length} file${attachments.length > 1 ? 's' : ''} attached` : "Attach files"}
+        >
+          <Paperclip size={18} />
+          {attachments.length > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium">
+              {attachments.length}
+            </span>
+          )}
+        </Button>
+      )}
 
       {/* Drag & Drop Zone (when dragging) */}
       {isDragOver && (

@@ -6,6 +6,7 @@ import { SendIcon, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 import { QuickActionsDropdown } from "./QuickActions";
 import { FileAttachmentComponent } from "./FileAttachment";
+import { AttachmentButton } from "./AttachmentButton";
 import { FileAttachment } from "@/types";
 
 interface ChatInputProps {
@@ -20,7 +21,9 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileAttachmentRef = useRef<{ triggerFileSelect: () => void }>(null);
   
   // Use controlled or uncontrolled input based on whether value/onChange are provided
   const isControlled = value !== undefined && onChange !== undefined;
@@ -124,6 +127,14 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
   };
 
+  const handleAttachmentClick = () => {
+    // Trigger file selection from the FileAttachmentComponent
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
@@ -172,6 +183,7 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           attachments={attachments}
           onAttachmentsChange={setAttachments}
           disabled={isLoading || isRecording}
+          showButton={false}
         />
         
         <div className="flex items-end gap-3 mt-3">
@@ -192,6 +204,12 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           }}
         />
         <div className="flex gap-2 flex-shrink-0">
+          <AttachmentButton
+            onClick={handleAttachmentClick}
+            disabled={isLoading || isRecording}
+            attachments={attachments}
+            isDragOver={isDragOver}
+          />
           <QuickActionsDropdown 
             onSelectAction={(prompt) => {
               if (isControlled && onChange) {
