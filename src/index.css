@@ -247,3 +247,136 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* Citation styling */
+.citation-number {
+  @apply inline-flex items-center justify-center;
+  @apply bg-blue-50 dark:bg-blue-950/50;
+  @apply border border-blue-200 dark:border-blue-800;
+  @apply text-blue-700 dark:text-blue-300;
+  @apply text-xs font-medium;
+  @apply rounded-full px-1.5 py-0.5;
+  @apply hover:bg-blue-100 dark:hover:bg-blue-900/50;
+  @apply transition-all duration-200;
+  @apply no-underline;
+  min-width: 1.5rem;
+  height: 1.5rem;
+}
+
+.citation-number:hover {
+  @apply shadow-sm scale-105;
+}
+
+/* Enhanced chat bubble styling */
+.chat-bubble {
+  @apply relative rounded-2xl p-4 shadow-sm;
+  @apply bg-gradient-to-br;
+}
+
+.chat-bubble-user {
+  @apply from-blue-500 to-blue-600 text-white;
+  @apply ml-auto rounded-tr-sm;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.chat-bubble-ai {
+  @apply from-background to-muted/30;
+  @apply border border-border/50;
+  @apply rounded-tl-sm;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dark .chat-bubble-ai {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced avatar styling */
+.chat-avatar {
+  @apply w-8 h-8 rounded-full flex items-center justify-center;
+  @apply shadow-md ring-2 ring-background;
+  @apply transition-transform duration-200;
+}
+
+.chat-avatar:hover {
+  @apply scale-105;
+}
+
+.chat-avatar-user {
+  @apply bg-gradient-to-br from-blue-500 to-blue-600 text-white;
+}
+
+.chat-avatar-ai {
+  @apply bg-gradient-to-br from-primary to-primary/80 text-primary-foreground;
+}
+
+/* Improved attachment styling */
+.attachment-preview {
+  @apply relative rounded-lg overflow-hidden;
+  @apply border border-border/20;
+  @apply bg-muted/20;
+  @apply hover:shadow-md transition-all duration-200;
+}
+
+.attachment-overlay {
+  @apply absolute inset-0 bg-black/0 hover:bg-black/10;
+  @apply flex items-center justify-center;
+  @apply opacity-0 hover:opacity-100;
+  @apply transition-all duration-200;
+}
+
+/* Enhanced input styling */
+.chat-input-container {
+  @apply bg-background/95 backdrop-blur-md;
+  @apply border border-border/50;
+  @apply rounded-2xl shadow-lg;
+  @apply hover:shadow-xl transition-all duration-200;
+}
+
+.chat-input-container:focus-within {
+  @apply ring-2 ring-primary/20;
+  @apply border-primary/30;
+}
+
+/* Improved message animations */
+.message-enter {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced typing indicator */
+.typing-indicator {
+  @apply flex items-center gap-1 px-4 py-2;
+  @apply text-muted-foreground text-sm;
+}
+
+.typing-dot {
+  @apply w-2 h-2 bg-current rounded-full;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}

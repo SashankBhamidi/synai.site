@@ -183,22 +183,20 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
 
   return (
     <div className={cn(
-      "flex gap-2 sm:gap-4 items-start group",
+      "flex gap-3 sm:gap-4 items-start group message-enter",
       isUser ? "flex-row-reverse" : ""
     )}>
-      <div className="flex-shrink-0 mt-0.5">
+      <div className="flex-shrink-0 mt-1">
         <div className={cn(
-          "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center",
-          isUser ? "bg-blue-500 text-white" : "bg-primary text-primary-foreground"
+          "chat-avatar",
+          isUser ? "chat-avatar-user" : "chat-avatar-ai"
         )}>
-          {isUser ? <User size={12} className="sm:w-4 sm:h-4" /> : <Bot size={12} className="sm:w-4 sm:h-4" />}
+          {isUser ? <User size={16} /> : <Bot size={16} />}
         </div>
       </div>
       <div className={cn(
-        "rounded-2xl p-3 sm:p-4 max-w-[85%] sm:max-w-[80%]",
-        isUser 
-          ? "bg-blue-500 text-white rounded-tr-none" 
-          : "bg-secondary/50 dark:bg-secondary/30 rounded-tl-none"
+        "chat-bubble max-w-[85%] sm:max-w-[75%]",
+        isUser ? "chat-bubble-user" : "chat-bubble-ai"
       )}>
         <div className="font-medium text-sm mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">

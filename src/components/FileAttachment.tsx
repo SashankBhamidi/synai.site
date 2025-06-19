@@ -232,12 +232,18 @@ export function FileAttachmentComponent({
         onClick={handleFileSelect}
         disabled={disabled || isProcessing || attachments.length >= maxAttachments}
         className={cn(
-          "rounded-full transition-colors",
-          isDragOver && "bg-primary/20 border-primary"
+          "rounded-full transition-all duration-200 hover:bg-accent hover:scale-105",
+          isDragOver && "bg-primary/20 border-primary scale-110",
+          attachments.length > 0 && "text-primary bg-primary/10"
         )}
-        title="Attach files"
+        title={attachments.length > 0 ? `${attachments.length} file${attachments.length > 1 ? 's' : ''} attached` : "Attach files"}
       >
         <Paperclip size={18} />
+        {attachments.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium">
+            {attachments.length}
+          </span>
+        )}
       </Button>
 
       {/* Drag & Drop Zone (when dragging) */}
@@ -260,17 +266,22 @@ export function FileAttachmentComponent({
 
       {/* Attachment List */}
       {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+        <div className="flex flex-wrap gap-2 p-3 bg-muted/20 rounded-xl border border-border/30">
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2 text-sm max-w-[200px]"
+              className="flex items-center gap-2 bg-background/80 backdrop-blur-sm border border-border/40 rounded-lg px-3 py-2 text-sm max-w-[220px] hover:shadow-md transition-all duration-200"
             >
-              {getFileIcon(attachment.type)}
+              <div className="flex-shrink-0">
+                {getFileIcon(attachment.type)}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="truncate font-medium">{attachment.name}</div>
+                <div className="truncate font-medium text-foreground">{attachment.name}</div>
                 <div className="text-xs text-muted-foreground">
                   {formatFileSize(attachment.size)}
+                  {attachment.content && (
+                    <span className="ml-1">• {attachment.content.split(/\s+/).length} words</span>
+                  )}
                 </div>
               </div>
               <Button
@@ -278,7 +289,8 @@ export function FileAttachmentComponent({
                 variant="ghost"
                 size="icon"
                 onClick={() => removeAttachment(attachment.id)}
-                className="h-6 w-6 rounded-full hover:bg-destructive/20"
+                className="h-6 w-6 rounded-full hover:bg-destructive/20 hover:text-destructive transition-colors flex-shrink-0"
+                title="Remove file"
               >
                 <X size={12} />
               </Button>

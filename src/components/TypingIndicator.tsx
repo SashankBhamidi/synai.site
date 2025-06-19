@@ -4,21 +4,21 @@ import { Bot } from "lucide-react";
 
 export function TypingIndicator() {
   return (
-    <div className="flex gap-4 items-start">
-      <div className="flex-shrink-0 mt-0.5">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
+    <div className="flex gap-3 sm:gap-4 items-start message-enter">
+      <div className="flex-shrink-0 mt-1">
+        <div className="chat-avatar chat-avatar-ai">
           <Bot size={16} />
         </div>
       </div>
-      <div className="flex-1 bg-secondary/50 rounded-2xl rounded-tl-none p-4 max-w-[80%]">
-        <div className="font-medium text-sm mb-1">Synthesis AI</div>
-        <div className="flex items-center space-x-1">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-          <span className="text-xs text-muted-foreground ml-2">typing...</span>
+      <div className="chat-bubble chat-bubble-ai max-w-[75%]">
+        <div className="font-medium text-sm mb-2 flex items-center gap-2">
+          <span>Synthesis AI</span>
+        </div>
+        <div className="typing-indicator">
+          <div className="typing-dot"></div>
+          <div className="typing-dot"></div>
+          <div className="typing-dot"></div>
+          <span className="ml-2 text-xs">thinking...</span>
         </div>
       </div>
     </div>

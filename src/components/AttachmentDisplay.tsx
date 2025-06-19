@@ -69,25 +69,26 @@ export function AttachmentDisplay({ attachments, isUser = false }: AttachmentDis
             <div
               key={attachment.id}
               className={cn(
-                "relative rounded-lg overflow-hidden border max-w-sm group",
+                "attachment-preview max-w-sm group cursor-pointer",
                 isUser ? "border-white/20" : "border-border"
               )}
+              onClick={() => viewAttachment(attachment)}
             >
               <img
                 src={attachment.preview}
                 alt={attachment.name}
-                className="w-full h-auto max-h-64 object-cover cursor-pointer"
-                onClick={() => viewAttachment(attachment)}
+                className="w-full h-auto max-h-64 object-cover"
               />
-              <div className={cn(
-                "absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-              )}>
+              <div className="attachment-overlay">
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => viewAttachment(attachment)}
-                    className="h-8 px-3"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      viewAttachment(attachment);
+                    }}
+                    className="h-8 px-3 bg-white/90 hover:bg-white text-gray-800"
                   >
                     <Eye size={14} className="mr-1" />
                     View
@@ -95,8 +96,11 @@ export function AttachmentDisplay({ attachments, isUser = false }: AttachmentDis
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => downloadAttachment(attachment)}
-                    className="h-8 px-3"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadAttachment(attachment);
+                    }}
+                    className="h-8 px-3 bg-white/90 hover:bg-white text-gray-800"
                   >
                     <Download size={14} className="mr-1" />
                     Save

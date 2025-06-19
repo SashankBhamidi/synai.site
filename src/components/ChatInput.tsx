@@ -166,7 +166,7 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow">
+      <div className="chat-input-container p-4">
         {/* File Attachments */}
         <FileAttachmentComponent
           attachments={attachments}
@@ -174,13 +174,13 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           disabled={isLoading || isRecording}
         />
         
-        <div className="flex items-end gap-3 mt-2">
+        <div className="flex items-end gap-3 mt-3">
           <Textarea
           ref={textareaRef}
           value={currentValue}
           onChange={handleInputChange}
           placeholder={isRecording ? "🎤 Recording... Click stop when finished" : "Message Synthesis AI..."}
-          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[50px] max-h-[200px] overflow-y-auto transition-all duration-200 placeholder:text-muted-foreground/70"
+          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[56px] max-h-[200px] overflow-y-auto transition-all duration-200 placeholder:text-muted-foreground/60 text-foreground"
           disabled={isLoading || isRecording}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {

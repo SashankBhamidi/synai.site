@@ -206,7 +206,10 @@ export class PerplexityService extends BaseProviderService {
 
   private convertCitationsToLinks(content: string, sourceUrls: Record<number, string>): string {
     if (Object.keys(sourceUrls).length === 0) {
-      return content;
+      // If no source URLs, still make citations stand out but not clickable
+      return content.replace(/\[(\d+)\]/g, (match, num) => {
+        return `<span class="citation-number">[${num}]</span>`;
+      });
     }
     
     // Convert inline citations [1], [2] etc. to clickable markdown links
@@ -215,14 +218,14 @@ export class PerplexityService extends BaseProviderService {
       const url = sourceUrls[citationNum];
       if (url) {
         if (url.startsWith('#citation-')) {
-          // For placeholder citations, just make them bold
-          return `**[${num}]**`;
+          // For placeholder citations, make them interactive but not linking to external sources
+          return `<span class="citation-number cursor-pointer" title="Citation ${num}">[${num}]</span>`;
         } else {
-          // Create clickable link with proper formatting
+          // Create proper markdown link - this should render as clickable link
           return `[${num}](${url} "View source ${num}")`;
         }
       }
-      return match;
+      return `<span class="citation-number">[${num}]</span>`;
     });
   }
 
