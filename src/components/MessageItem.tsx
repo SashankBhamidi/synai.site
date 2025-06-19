@@ -15,13 +15,16 @@ import { Badge } from "@/components/ui/badge";
 
 interface MessageItemProps {
   message: Message;
+  messages?: Message[];
+  messageIndex?: number;
   onRegenerate?: () => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onDelete?: (messageId: string) => void;
   isLastMessage?: boolean;
+  onBranchCreated?: (conversationId: string) => void;
 }
 
-function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastMessage }: MessageItemProps) {
+function MessageItemComponent({ message, messages, messageIndex, onRegenerate, onEdit, onDelete, isLastMessage, onBranchCreated }: MessageItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -92,7 +95,7 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
           {children}
         </code>
       ) : (
-        <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4 my-3 font-mono text-sm overflow-auto border relative group">
+        <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4 my-3 font-mono text-sm overflow-auto custom-scrollbar border relative group">
           <div className="flex justify-between items-center mb-2">
             {language && (
               <div className="text-gray-400 text-xs uppercase tracking-wide">
@@ -265,11 +268,14 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
         </div>
         {!isEditing && (
           <MessageActions 
-            message={message} 
+            message={message}
+            messages={messages}
+            messageIndex={messageIndex}
             onRegenerate={onRegenerate}
             onEdit={handleEdit}
             onDelete={handleDeleteMessage}
             isLastMessage={isLastMessage}
+            onBranchCreated={onBranchCreated}
           />
         )}
       </div>

@@ -10,6 +10,8 @@ import { SettingsDialog } from "./SettingsDialog";
 import { HelpDialog } from "./HelpDialog";
 import { WelcomeTooltip } from "./WelcomeTooltip";
 import { ModelComparison } from "./ModelComparison";
+import { MessageTemplates } from "./MessageTemplates";
+import { GlobalConversationSearch } from "./GlobalConversationSearch";
 import { UsageAnalytics } from "./UsageAnalytics";
 import { SuggestionPrompts } from "./SuggestionPrompts";
 import { QuickActions } from "./QuickActions";
@@ -17,7 +19,7 @@ import { ThemeCustomizer } from "./ThemeCustomizer";
 import { getDefaultModel, getDefaultModelForProvider, availableModels } from "@/data/models";
 import { recordMessage } from "@/utils/usageAnalytics";
 import { Button } from "@/components/ui/button";
-import { Trash2, MessagesSquare } from "lucide-react";
+import { Trash2, MessagesSquare, Upload } from "lucide-react";
 import { sendAiMessage } from "@/services/aiService";
 import { hasApiKey, getConfiguredProviders } from "@/utils/apiKeyStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -62,6 +64,7 @@ export function ChatInterface() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -573,6 +576,43 @@ export function ChatInterface() {
     }
   }, []);
 
+  // Global drag and drop handlers
+  const handleGlobalDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer?.items) {
+      const hasFiles = Array.from(e.dataTransfer.items).some(item => item.kind === 'file');
+      if (hasFiles) {
+        setIsDragOver(true);
+      }
+    }
+  }, []);
+
+  const handleGlobalDragLeave = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    // Only hide drag overlay if leaving the window
+    if (!e.relatedTarget) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleGlobalDrop = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  // Add global drag and drop event listeners
+  useEffect(() => {
+    document.addEventListener('dragover', handleGlobalDragOver);
+    document.addEventListener('dragleave', handleGlobalDragLeave);
+    document.addEventListener('drop', handleGlobalDrop);
+    
+    return () => {
+      document.removeEventListener('dragover', handleGlobalDragOver);
+      document.removeEventListener('dragleave', handleGlobalDragLeave);
+      document.removeEventListener('drop', handleGlobalDrop);
+    };
+  }, [handleGlobalDragOver, handleGlobalDragLeave, handleGlobalDrop]);
+
   return (
     <div className="flex flex-col h-screen max-h-screen overflow-hidden relative">
       {/* Fixed Header */}
@@ -652,6 +692,8 @@ export function ChatInterface() {
             
             {/* Tools & Settings */}
             <div className="flex items-center gap-2">
+              <GlobalConversationSearch />
+              <MessageTemplates onSelectTemplate={(template) => setInputValue(template)} />
               <UsageAnalytics />
               <ModelComparison />
               <HelpDialog />
@@ -696,11 +738,17 @@ export function ChatInterface() {
           messages.map((message, index) => (
             <MessageItem 
               key={`${message.id}-${message.timestamp.getTime()}`} // Better key for React optimization
-              message={message} 
+              message={message}
+              messages={messages}
+              messageIndex={index}
               onRegenerate={handleRegenerateResponse}
               onEdit={handleEditMessage}
               onDelete={handleDeleteMessage}
               isLastMessage={index === messages.length - 1}
+              onBranchCreated={(conversationId) => {
+                // Handle branch creation - could trigger navigation or refresh
+                console.log('Branch created:', conversationId);
+              }}
             />
           ))
         )}
@@ -743,6 +791,24 @@ export function ChatInterface() {
       
       {/* Add the welcome tooltip */}
       <WelcomeTooltip />
+      
+      {/* Global Drag & Drop Overlay */}
+      {isDragOver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md">
+          <div className="border-2 border-dashed border-primary bg-background/95 rounded-2xl p-12 text-center max-w-lg shadow-2xl">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Upload size={32} className="text-primary" />
+            </div>
+            <h3 className="text-2xl font-semibold mb-3 text-foreground">Drop files anywhere</h3>
+            <p className="text-muted-foreground">
+              Supports images, text files, code, PDFs, and documents
+            </p>
+            <div className="mt-4 text-xs text-muted-foreground/70">
+              Files will be attached to your next message
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

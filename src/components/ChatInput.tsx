@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { QuickActionsDropdown } from "./QuickActions";
 import { FileAttachmentComponent } from "./FileAttachment";
 import { AttachmentButton } from "./AttachmentButton";
+import { SmartAutoComplete } from "./SmartAutoComplete";
 import { FileAttachment } from "@/types";
 
 interface ChatInputProps {
@@ -22,6 +23,7 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showAutoComplete, setShowAutoComplete] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileAttachmentRef = useRef<{ triggerFileSelect: () => void }>(null);
   
@@ -121,6 +123,9 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
       setInput(newValue);
     }
     
+    // Show/hide autocomplete based on input
+    setShowAutoComplete(newValue.length > 1 && !isLoading && !isRecording);
+    
     // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';
@@ -186,13 +191,13 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           showButton={false}
         />
         
-        <div className="flex items-end gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-3">
           <Textarea
           ref={textareaRef}
           value={currentValue}
           onChange={handleInputChange}
           placeholder={isRecording ? "🎤 Recording... Click stop when finished" : "Message Synthesis AI..."}
-          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[56px] max-h-[200px] overflow-y-auto transition-all duration-200 placeholder:text-muted-foreground/60 text-foreground"
+          className="resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-h-[56px] max-h-[200px] overflow-y-auto custom-scrollbar transition-all duration-200 placeholder:text-muted-foreground/60 text-foreground"
           disabled={isLoading || isRecording}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -201,6 +206,19 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
                 handleSubmit(e);
               }
             }
+            // Hide autocomplete on escape
+            if (e.key === "Escape") {
+              setShowAutoComplete(false);
+            }
+          }}
+          onFocus={() => currentValue.length > 1 && setShowAutoComplete(true)}
+          onBlur={(e) => {
+            // Only hide if not clicking on autocomplete
+            setTimeout(() => {
+              if (!e.relatedTarget?.closest('.smart-autocomplete')) {
+                setShowAutoComplete(false);
+              }
+            }, 150);
           }}
         />
         <div className="flex gap-2 flex-shrink-0">
@@ -261,6 +279,31 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           </Button>
         </div>
         </div>
+        
+        {/* Smart Auto-Complete */}
+        {showAutoComplete && (
+          <SmartAutoComplete
+            inputValue={currentValue}
+            onSuggestionSelect={(suggestion) => {
+              if (isControlled && onChange) {
+                onChange(suggestion);
+              } else {
+                setInput(suggestion);
+              }
+              setShowAutoComplete(false);
+              // Focus textarea after selection
+              setTimeout(() => {
+                if (textareaRef.current) {
+                  textareaRef.current.focus();
+                  const len = suggestion.length;
+                  textareaRef.current.setSelectionRange(len, len);
+                }
+              }, 50);
+            }}
+            onHide={() => setShowAutoComplete(false)}
+            className="smart-autocomplete bottom-full mb-2 left-0"
+          />
+        )}
       </div>
     </form>
   );

@@ -552,7 +552,7 @@ export function ModelComparison() {
                   <TabsTrigger value="analysis">Analysis</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="responses" className="flex-1 overflow-y-auto p-4 space-y-4">
+                <TabsContent value="responses" className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
                   {responses.map((response) => (
                     <div key={response.model.id} className="border rounded-lg">
                       <div className="p-4 pb-3 border-b">
@@ -597,7 +597,7 @@ export function ModelComparison() {
                   ))}
                 </TabsContent>
                 
-                <TabsContent value="metrics" className="flex-1 overflow-y-auto p-4">
+                <TabsContent value="metrics" className="flex-1 overflow-y-auto custom-scrollbar p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {responses.map(response => {
                       const modelMetrics = metrics[response.model.id];
@@ -645,7 +645,7 @@ export function ModelComparison() {
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="analysis" className="flex-1 overflow-y-auto p-4">
+                <TabsContent value="analysis" className="flex-1 overflow-y-auto custom-scrollbar p-4">
                   <div className="space-y-6">
                     {/* Speed Analysis */}
                     <div className="border rounded-lg">
