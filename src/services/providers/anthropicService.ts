@@ -62,12 +62,19 @@ export class AnthropicService extends BaseProviderService {
       const responseText = textOutputs.join("\n");
       console.log('Received response from Anthropic API');
       
-      return this.cleanupReferences(responseText);
+      return responseText;
       
     } catch (error) {
       console.error('Anthropic request failed:', error);
-      // Fallback to simulated response on error
-      return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
+      
+      // Only fall back to simulated response for network errors when no API key is configured
+      if (!this.apiKey && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.log('Network error with no API key - using simulated response');
+        return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
+      }
+      
+      // For actual API errors with valid key, throw the error to be handled upstream
+      throw new Error(this.handleApiError(error, 'Anthropic'));
     }
   }
 
@@ -100,7 +107,7 @@ export class AnthropicService extends BaseProviderService {
     return convertedMessages;
   }
 
-  private validateMessageOrder(messages: any[]) {
+  private validateMessageOrder(messages: Array<{role: string; content: string}>) {
     // Anthropic requires messages to start with user and alternate user/assistant
     const validatedMessages = [];
     
@@ -136,20 +143,6 @@ export class AnthropicService extends BaseProviderService {
     return validatedMessages;
   }
 
-  private cleanupReferences(content: string): string {
-    // Remove citation numbers like [1], [2], [3], etc.
-    content = content.replace(/\[\d+\]/g, '');
-    
-    // Remove reference sections at the end
-    content = content.replace(/\n\nReferences?:[\s\S]*$/i, '');
-    content = content.replace(/\n\nSources?:[\s\S]*$/i, '');
-    
-    // Clean up extra whitespace
-    content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
-    content = content.trim();
-    
-    return content;
-  }
 
   private generateSimulatedResponse(assistantName: string, model: string, messages?: ApiMessage[]): string {
     // Use conversation context for better simulated responses

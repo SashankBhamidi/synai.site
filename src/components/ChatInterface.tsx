@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Message, AIModel } from "@/types";
 import { MessageItem } from "./MessageItem";
@@ -173,18 +173,18 @@ export function ChatInterface() {
     };
   }, [currentConversationId, messages]);
 
-  // Auto-save messages when they change
+  // Auto-save messages when they change (with longer debounce for better performance)
   useEffect(() => {
     if (currentConversationId && messages.length > 0) {
       const conversations = getConversations();
       const conversation = conversations.find(c => c.id === currentConversationId);
       
       if (conversation) {
-        // Debounce saves
+        // Longer debounce to reduce frequency of saves
         const timeoutId = setTimeout(() => {
           saveConversation(conversation, messages);
           console.log('Auto-saved conversation:', currentConversationId, 'with', messages.length, 'messages');
-        }, 1000);
+        }, 3000); // Increased from 1000ms to 3000ms
         
         return () => clearTimeout(timeoutId);
       }
@@ -464,7 +464,7 @@ export function ChatInterface() {
     await handleSendMessage(newContent, false, newMessages);
   };
 
-  const handleDeleteMessage = (messageId: string) => {
+  const handleDeleteMessage = useCallback((messageId: string) => {
     const updatedMessages = messages.filter(msg => msg.id !== messageId);
     setMessages(updatedMessages);
     
@@ -478,7 +478,7 @@ export function ChatInterface() {
     }
     
     toast.success("Message deleted");
-  };
+  }, [currentConversationId, messages]);
 
   const handleModelChange = (model: AIModel) => {
     console.log(`Changing model to: ${model.name} from provider ${model.provider}`);
@@ -631,7 +631,7 @@ export function ChatInterface() {
         ) : (
           messages.map((message, index) => (
             <MessageItem 
-              key={message.id} 
+              key={`${message.id}-${message.timestamp.getTime()}`} // Better key for React optimization
               message={message} 
               onRegenerate={handleRegenerateResponse}
               onEdit={handleEditMessage}

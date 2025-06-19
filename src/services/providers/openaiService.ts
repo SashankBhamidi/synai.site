@@ -90,42 +90,24 @@ export class OpenAIService extends BaseProviderService {
         throw new Error(`Invalid response format from OpenAI: ${responseText.substring(0, 100)}`);
       }
       
-      let content = data.choices[0]?.message?.content || '';
-      
-      // Clean up any reference numbers that might appear
-      content = this.cleanupReferences(content);
+      const content = data.choices[0]?.message?.content || '';
       
       console.log('OpenAI response content:', content);
       return content;
     } catch (error) {
       console.error('OpenAI request failed:', error);
       
-      // For any network or API errors, fall back to simulated response
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.log('Network error detected, using simulated response');
+      // Only fall back to simulated response for network errors when no API key is configured
+      if (!this.apiKey && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.log('Network error with no API key - using simulated response');
         return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
       }
       
-      // For other errors, also use simulated response but log the error
-      console.log('API error detected, using simulated response:', error.message);
-      return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
+      // For actual API errors with valid key, throw the error to be handled upstream
+      throw new Error(this.handleApiError(error, 'OpenAI'));
     }
   }
 
-  private cleanupReferences(content: string): string {
-    // Remove citation numbers like [1], [2], [3], etc.
-    content = content.replace(/\[\d+\]/g, '');
-    
-    // Remove reference sections at the end
-    content = content.replace(/\n\nReferences?:[\s\S]*$/i, '');
-    content = content.replace(/\n\nSources?:[\s\S]*$/i, '');
-    
-    // Clean up extra whitespace
-    content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
-    content = content.trim();
-    
-    return content;
-  }
 
   private generateSimulatedResponse(assistantName: string, model: string, messages?: ApiMessage[]): string {
     // Use conversation context for better simulated responses

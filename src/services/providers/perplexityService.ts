@@ -9,7 +9,7 @@ export class PerplexityService extends BaseProviderService {
   async sendRequest(options: AiRequestOptions): Promise<string> {
     this.validateApiKey();
     
-    const model = options.model || 'llama-3.1-sonar-small-128k-online';
+    const model = options.model || 'llama-3.1-sonar-large-128k-online';
     
     try {
       // If using simulated response (no API key or demo mode)
@@ -72,39 +72,62 @@ export class PerplexityService extends BaseProviderService {
         throw new Error(`Invalid response format from Perplexity: ${responseText.substring(0, 100)}`);
       }
       
-      let content = data.choices[0]?.message?.content || '';
+      const content = data.choices[0]?.message?.content || '';
       
-      // Clean up citation numbers and references
-      content = this.cleanupReferences(content);
+      // Parse and structure citations instead of removing them
+      const structuredResponse = this.parsePerplexityResponse(content);
       
-      console.log('Perplexity response content:', content);
-      return content;
+      console.log('Perplexity response content:', structuredResponse);
+      return structuredResponse;
     } catch (error) {
       console.error('Perplexity request failed:', error);
       
-      // For network errors, fall back to simulated response
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.log('Network error detected, using simulated response');
+      // Only fall back to simulated response for network errors when no API key is configured
+      if (!this.apiKey && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.log('Network error with no API key - using simulated response');
         return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
       }
       
-      // For other errors, also use simulated response but log the error
-      console.log('API error detected, using simulated response:', error.message);
-      return this.generateSimulatedResponse('Synthesis AI', model, options.messages);
+      // For actual API errors with valid key, throw the error to be handled upstream
+      throw new Error(this.handleApiError(error, 'Perplexity'));
     }
   }
 
-  private cleanupReferences(content: string): string {
-    // Remove citation numbers like [1], [2], [3], etc.
-    content = content.replace(/\[\d+\]/g, '');
+  private parsePerplexityResponse(content: string): string {
+    // Extract sources/references section if it exists
+    const sourcesMatch = content.match(/\n\n(?:References?|Sources?):\s*([\s\S]*)$/i);
+    let sources: string[] = [];
     
-    // Remove reference sections at the end
-    content = content.replace(/\n\nReferences?:[\s\S]*$/i, '');
-    content = content.replace(/\n\nSources?:[\s\S]*$/i, '');
+    if (sourcesMatch) {
+      // Parse sources from the references section
+      const sourcesText = sourcesMatch[1];
+      sources = sourcesText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && (line.match(/^\d+\./) || line.match(/^-/) || line.includes('http')))
+        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, ''));
+    }
     
-    // Clean up extra whitespace
-    content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
-    content = content.trim();
+    // If we have sources, create a structured response with clickable citations
+    if (sources.length > 0) {
+      // Remove the original sources section
+      content = content.replace(/\n\n(?:References?|Sources?):\s*[\s\S]*$/i, '');
+      
+      // Add structured sources section
+      content += '\n\n---\n\n**Sources:**\n';
+      sources.forEach((source, index) => {
+        const citationNum = index + 1;
+        // Try to extract URL if present
+        const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+        if (urlMatch) {
+          const url = urlMatch[1];
+          const title = source.replace(url, '').trim().replace(/^[-\s]*/, '').replace(/[-\s]*$/, '') || `Source ${citationNum}`;
+          content += `\n${citationNum}. [${title}](${url})`;
+        } else {
+          content += `\n${citationNum}. ${source}`;
+        }
+      });
+    }
     
     return content;
   }

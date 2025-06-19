@@ -2,13 +2,15 @@
 import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { Message } from "@/types";
 import { cn } from "@/lib/utils";
-import { User, Bot, Check, X } from "lucide-react";
+import { User, Bot, Check, X, Search } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CopyButton } from "./CopyButton";
 import { MessageActions } from "./MessageActions";
+import { CitationLink } from "./CitationLink";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface MessageItemProps {
   message: Message;
@@ -64,11 +66,16 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
     }
   };
 
+  // Check if this is a search-enabled model response
+  const isSearchModel = useMemo(() => {
+    return message.model?.provider === 'Perplexity' && 
+           message.model?.category === 'Search';
+  }, [message.model]);
+
   // Memoize markdown components to prevent re-rendering
   const markdownComponents = useMemo(() => ({
     // Enhanced code blocks with syntax highlighting appearance
-    code({node, className, children, ...props}: {
-      node?: unknown;
+    code({className, children, ...props}: {
       className?: string;
       children?: React.ReactNode;
       [key: string]: unknown;
@@ -130,32 +137,45 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
         {children}
       </td>
     ),
-    h1: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h1 className="text-2xl font-bold my-4 text-foreground border-b pb-2" {...props} />,
-    h2: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h2 className="text-xl font-bold my-3 text-foreground" {...props} />,
-    h3: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h3 className="text-lg font-bold my-3 text-foreground" {...props} />,
-    h4: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h4 className="text-md font-bold my-2 text-foreground" {...props} />,
-    h5: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h5 className="text-sm font-bold my-2 text-foreground" {...props} />,
-    h6: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <h6 className="text-xs font-bold my-2 text-foreground" {...props} />,
-    p: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <p className="my-2 leading-relaxed" {...props} />,
-    ul: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <ul className="list-disc ml-6 my-2 space-y-1" {...props} />,
-    ol: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <ol className="list-decimal ml-6 my-2 space-y-1" {...props} />,
-    li: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <li className="my-1" {...props} />,
-    a: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => (
-      <a 
-        className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors" 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        {...props} 
-      />
-    ),
-    blockquote: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => (
+    h1: ({...props}: {[key: string]: unknown}) => <h1 className="text-2xl font-bold my-4 text-foreground border-b pb-2" {...props} />,
+    h2: ({...props}: {[key: string]: unknown}) => <h2 className="text-xl font-bold my-3 text-foreground" {...props} />,
+    h3: ({...props}: {[key: string]: unknown}) => <h3 className="text-lg font-bold my-3 text-foreground" {...props} />,
+    h4: ({...props}: {[key: string]: unknown}) => <h4 className="text-md font-bold my-2 text-foreground" {...props} />,
+    h5: ({...props}: {[key: string]: unknown}) => <h5 className="text-sm font-bold my-2 text-foreground" {...props} />,
+    h6: ({...props}: {[key: string]: unknown}) => <h6 className="text-xs font-bold my-2 text-foreground" {...props} />,
+    p: ({...props}: {[key: string]: unknown}) => <p className="my-2 leading-relaxed" {...props} />,
+    ul: ({...props}: {[key: string]: unknown}) => <ul className="list-disc ml-6 my-2 space-y-1" {...props} />,
+    ol: ({...props}: {[key: string]: unknown}) => <ol className="list-decimal ml-6 my-2 space-y-1" {...props} />,
+    li: ({...props}: {[key: string]: unknown}) => <li className="my-1" {...props} />,
+    a: ({href, children, ...props}: {href?: string; children?: React.ReactNode; [key: string]: unknown}) => {
+      // Enhanced link handling for citations
+      if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+        return (
+          <CitationLink href={href} {...props}>
+            {children}
+          </CitationLink>
+        );
+      }
+      return (
+        <a 
+          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          href={href}
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
+    blockquote: ({...props}: {[key: string]: unknown}) => (
       <blockquote className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 pl-4 py-2 my-3 italic rounded-r-md" {...props} />
     ),
-    hr: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <hr className="my-6 border-border" {...props} />,
-    em: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <em className="italic text-foreground" {...props} />,
-    strong: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <strong className="font-bold text-foreground" {...props} />,
-    del: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <del className="line-through text-muted-foreground" {...props} />,
-    pre: ({node, ...props}: {node?: unknown; [key: string]: unknown}) => <pre className="whitespace-pre-wrap" {...props} />,
+    hr: ({...props}: {[key: string]: unknown}) => <hr className="my-6 border-border" {...props} />,
+    em: ({...props}: {[key: string]: unknown}) => <em className="italic text-foreground" {...props} />,
+    strong: ({...props}: {[key: string]: unknown}) => <strong className="font-bold text-foreground" {...props} />,
+    del: ({...props}: {[key: string]: unknown}) => <del className="line-through text-muted-foreground" {...props} />,
+    pre: ({...props}: {[key: string]: unknown}) => <pre className="whitespace-pre-wrap" {...props} />,
   }), []);
 
   return (
@@ -178,7 +198,15 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
           : "bg-secondary/50 dark:bg-secondary/30 rounded-tl-none"
       )}>
         <div className="font-medium text-sm mb-1 flex items-center justify-between">
-          <span>{isUser ? "You" : "Synthesis AI"}</span>
+          <div className="flex items-center gap-2">
+            <span>{isUser ? "You" : "Synthesis AI"}</span>
+            {!isUser && isSearchModel && (
+              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                <Search size={10} className="mr-1" />
+                Search
+              </Badge>
+            )}
+          </div>
           {!isUser && message.regenerationCount && message.regenerationCount > 0 && (
             <span className="text-xs opacity-70 ml-2">
               Regenerated {message.regenerationCount} time{message.regenerationCount > 1 ? 's' : ''}
@@ -242,5 +270,16 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
-export const MessageItem = memo(MessageItemComponent);
+// Memoize the component to prevent unnecessary re-renders with custom comparison
+export const MessageItem = memo(MessageItemComponent, (prevProps, nextProps) => {
+  // Only re-render if message content, editing state, or last message status changes
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.regenerationCount === nextProps.message.regenerationCount &&
+    prevProps.isLastMessage === nextProps.isLastMessage &&
+    prevProps.onRegenerate === nextProps.onRegenerate &&
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onDelete === nextProps.onDelete
+  );
+});
