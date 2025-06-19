@@ -4,49 +4,72 @@ export const modelsByProvider: ModelGroup[] = [
   {
     provider: "OpenAI",
     models: [
-      // GPT-4 Series
+      // Flagship Chat Models
+      {
+        id: "gpt-4.1",
+        name: "GPT-4.1",
+        provider: "OpenAI",
+        category: "Flagship Chat",
+        description: "Long-context, complex tasks, advanced programming",
+      },
       {
         id: "gpt-4o",
         name: "GPT-4o",
         provider: "OpenAI",
-        category: "GPT-4",
-        description: "Flagship multimodal model, very fast and cost-effective",
+        category: "Flagship Chat",
+        description: "Multimodal, fast, creative, instruction-following",
       },
       {
-        id: "gpt-4o-mini",
-        name: "GPT-4o Mini",
+        id: "chatgpt-4o",
+        name: "ChatGPT-4o",
         provider: "OpenAI",
-        category: "GPT-4",
-        description: "Smaller GPT-4o, faster and cheaper for lightweight tasks",
+        category: "Flagship Chat",
+        description: "Used in ChatGPT, multimodal",
       },
+      // Multimodal Models
       {
-        id: "gpt-4",
-        name: "GPT-4",
+        id: "gpt-4o-audio",
+        name: "GPT-4o Audio",
         provider: "OpenAI",
-        category: "GPT-4",
-        description: "Original GPT-4, strong reasoning, coding, and creative writing",
-      },
-      {
-        id: "gpt-4-turbo",
-        name: "GPT-4 Turbo",
-        provider: "OpenAI",
-        category: "GPT-4",
-        description: "Cheaper and faster than Standard GPT-4",
+        category: "Multimodal",
+        description: "Audio input/output, conversational AI",
       },
       // Reasoning Models
       {
-        id: "o1",
-        name: "O1",
+        id: "o3",
+        name: "o3",
         provider: "OpenAI",
         category: "Reasoning",
-        description: "Reasoning-optimized model, excels at logic and math",
+        description: "Most powerful reasoning, logic, science, coding",
       },
       {
-        id: "o1-mini",
-        name: "O1 Mini",
+        id: "o3-pro",
+        name: "o3 Pro",
         provider: "OpenAI",
-        category: "Reasoning",
-        description: "Smaller, faster version of O1 for quick reasoning tasks",
+        category: "Reasoning Pro",
+        description: "Enhanced compute for even better responses",
+      },
+      {
+        id: "o3-mini",
+        name: "o3 Mini",
+        provider: "OpenAI",
+        category: "Reasoning Mini",
+        description: "Smaller, faster, cost-effective reasoning",
+      },
+      {
+        id: "o4-mini",
+        name: "o4 Mini",
+        provider: "OpenAI",
+        category: "Reasoning Mini",
+        description: "Fast, affordable, excels in math/coding/visual tasks",
+      },
+      // Cost-Optimized Models
+      {
+        id: "gpt-4.1-mini",
+        name: "GPT-4.1 Mini",
+        provider: "OpenAI",
+        category: "Cost-Optimized",
+        description: "Smaller, cheaper alternative for many tasks",
       },
     ],
   },
@@ -201,7 +224,7 @@ export const getDefaultModelForProvider = (provider: string): AIModel => {
       return availableModels.find(model => model.id === 'claude-sonnet-4-20250514') || 
              availableModels.find(model => model.provider === 'Anthropic')!;
     case 'openai':
-      return availableModels.find(model => model.id === 'gpt-4o') || 
+      return availableModels.find(model => model.id === 'gpt-4.1') || 
              availableModels.find(model => model.provider === 'OpenAI')!;
     case 'perplexity':
       return availableModels.find(model => model.id === 'sonar-pro') || 
