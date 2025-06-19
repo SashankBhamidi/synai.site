@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Message, AIModel } from "@/types";
+import { Message, AIModel, FileAttachment } from "@/types";
 import { MessageItem } from "./MessageItem";
 import { ChatInput } from "./ChatInput";
 import { ModelSelector } from "./ModelSelector";
@@ -230,24 +230,13 @@ export function ChatInterface() {
       const lastMessage = messages[messages.length - 1];
       if (!lastMessage) return [];
       
-      const content = typeof lastMessage.content === 'string' ? lastMessage.content : String(lastMessage.content || '');
-      return [{
-        role: lastMessage.role === 'assistant' ? 'assistant' as const : 'user' as const,
-        content
-      }];
+      return [convertSingleMessageToApiFormat(lastMessage)];
     }
     
     // Convert all messages to API format, preserving conversation context
     const apiMessages = messages
       .filter(msg => msg.role !== 'system') // Only filter out system messages (errors)
-      .map(msg => {
-        // Ensure content is always a string
-        const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
-        return {
-          role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
-          content
-        };
-      });
+      .map(msg => convertSingleMessageToApiFormat(msg));
     
     console.log('Converting messages to API format:', {
       originalCount: messages.length,
@@ -258,7 +247,76 @@ export function ChatInterface() {
     return apiMessages;
   };
 
-  const handleSendMessage = async (content: string, isRegeneration: boolean = false, initialMessages?: Message[], previousRegenerationCount?: number) => {
+  const convertSingleMessageToApiFormat = (msg: Message) => {
+    const textContent = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+    
+    // If no attachments, return simple format
+    if (!msg.attachments || msg.attachments.length === 0) {
+      return {
+        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+        content: textContent,
+        attachments: msg.attachments
+      };
+    }
+    
+    // Check if any attachments are images for multimodal content
+    const imageAttachments = msg.attachments.filter(att => att.type.startsWith('image/'));
+    const textAttachments = msg.attachments.filter(att => !att.type.startsWith('image/'));
+    
+    // For vision-capable models, create multimodal content
+    if (imageAttachments.length > 0) {
+      const contentArray = [
+        { type: 'text', text: textContent }
+      ];
+      
+      // Add images
+      imageAttachments.forEach(img => {
+        if (img.data) {
+          contentArray.push({
+            type: 'image_url',
+            image_url: { url: img.data }
+          });
+        }
+      });
+      
+      // Add text from non-image attachments to the main text content
+      let enhancedText = textContent;
+      textAttachments.forEach(att => {
+        if (att.content) {
+          enhancedText += `\n\n--- File: ${att.name} ---\n${att.content}`;
+        }
+      });
+      
+      // Update the text content
+      contentArray[0].text = enhancedText;
+      
+      return {
+        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+        content: contentArray,
+        attachments: msg.attachments
+      };
+    } else {
+      // No images, just add text file contents to the message
+      let enhancedText = textContent;
+      textAttachments.forEach(att => {
+        if (att.content) {
+          enhancedText += `\n\n--- File: ${att.name} ---\n${att.content}`;
+        }
+      });
+      
+      return {
+        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+        content: enhancedText,
+        attachments: msg.attachments
+      };
+    }
+  };
+
+  const handleSendMessage = async (content: string, attachments?: FileAttachment[]) => {
+    return handleSendMessageInternal(content, attachments, false, undefined, undefined);
+  };
+
+  const handleSendMessageInternal = async (content: string, attachments?: FileAttachment[], isRegeneration: boolean = false, initialMessages?: Message[], previousRegenerationCount?: number) => {
     // Clear input value immediately but keep focus handling separate
     if (!isRegeneration && !initialMessages) {
       setInputValue("");
@@ -297,6 +355,7 @@ export function ChatInterface() {
         role: "user",
         content,
         timestamp: new Date(),
+        attachments,
       };
       
       updatedMessages = [...messages, userMessage];
@@ -326,7 +385,8 @@ export function ChatInterface() {
         temperature: temperature + (isRegeneration ? Math.random() * 0.2 : 0),
         stream: streamResponses,
         simulateResponse: useSimulatedResponse,
-        messages: apiMessages
+        messages: apiMessages,
+        attachments: attachments
       };
 
       const response = await sendAiMessage(provider, requestOptions);
@@ -405,7 +465,7 @@ export function ChatInterface() {
       // Get the last user message
       const lastUserMessage = messagesWithoutLastAI[messagesWithoutLastAI.length - 1];
       if (lastUserMessage && lastUserMessage.role === "user") {
-        await handleSendMessage(lastUserMessage.content, true, messagesWithoutLastAI, regenerationCount);
+        await handleSendMessageInternal(lastUserMessage.content, undefined, true, messagesWithoutLastAI, regenerationCount);
       }
     } catch (error) {
       console.error('Error during regeneration:', error);
@@ -461,7 +521,7 @@ export function ChatInterface() {
     // Removed toast - action is self-evident from UI changes
     
     // Regenerate AI response with the edited message
-    await handleSendMessage(newContent, false, newMessages);
+    await handleSendMessageInternal(newContent, undefined, false, newMessages);
   };
 
   const handleDeleteMessage = useCallback((messageId: string) => {

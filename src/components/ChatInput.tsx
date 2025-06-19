@@ -5,9 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { SendIcon, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 import { QuickActionsDropdown } from "./QuickActions";
+import { FileAttachmentComponent } from "./FileAttachment";
+import { FileAttachment } from "@/types";
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
   isLoading: boolean;
   value?: string;
   onChange?: (value: string) => void;
@@ -17,6 +19,7 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Use controlled or uncontrolled input based on whether value/onChange are provided
@@ -124,13 +127,16 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
-    if (!currentValue.trim() || isLoading) return;
+    if ((!currentValue.trim() && attachments.length === 0) || isLoading) return;
     
-    onSendMessage(currentValue);
+    onSendMessage(currentValue, attachments.length > 0 ? attachments : undefined);
     
     if (!isControlled) {
       setInput("");
     }
+    
+    // Clear attachments after sending
+    setAttachments([]);
 
     // Refocus the textarea after a short delay to ensure the form submission is complete
     setTimeout(() => {
@@ -160,8 +166,16 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl p-3 flex items-end gap-3 shadow-sm hover:shadow-md transition-shadow">
-        <Textarea
+      <div className="bg-background/95 backdrop-blur-sm border border-border rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow">
+        {/* File Attachments */}
+        <FileAttachmentComponent
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          disabled={isLoading || isRecording}
+        />
+        
+        <div className="flex items-end gap-3 mt-2">
+          <Textarea
           ref={textareaRef}
           value={currentValue}
           onChange={handleInputChange}
@@ -171,7 +185,7 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              if (currentValue.trim() && !isRecording) {
+              if ((currentValue.trim() || attachments.length > 0) && !isRecording) {
                 handleSubmit(e);
               }
             }
@@ -218,15 +232,16 @@ export function ChatInput({ onSendMessage, isLoading, value, onChange }: ChatInp
             type="submit"
             size="icon" 
             className={`rounded-full h-10 w-10 sm:h-10 sm:w-10 transition-all duration-200 touch-manipulation ${
-              currentValue.trim() && !isLoading && !isRecording 
+              (currentValue.trim() || attachments.length > 0) && !isLoading && !isRecording 
                 ? 'bg-primary hover:bg-primary/90 shadow-lg scale-105' 
                 : ''
             }`}
-            disabled={!currentValue.trim() || isLoading || isRecording}
+            disabled={(!currentValue.trim() && attachments.length === 0) || isLoading || isRecording}
           >
             <SendIcon size={18} />
             <span className="sr-only">Send message</span>
           </Button>
+        </div>
         </div>
       </div>
     </form>

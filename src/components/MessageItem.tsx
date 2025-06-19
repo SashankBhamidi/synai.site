@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { CopyButton } from "./CopyButton";
 import { MessageActions } from "./MessageActions";
 import { CitationLink } from "./CitationLink";
+import { AttachmentDisplay } from "./AttachmentDisplay";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -247,15 +248,21 @@ function MessageItemComponent({ message, onRegenerate, onEdit, onDelete, isLastM
               </div>
             </div>
           ) : isUser ? (
-            <span>{message.content}</span>
+            <div>
+              <span>{message.content}</span>
+              <AttachmentDisplay attachments={message.attachments || []} isUser={true} />
+            </div>
           ) : (
-            <ReactMarkdown 
-              className="prose dark:prose-invert prose-sm max-w-none"
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {message.content}
-            </ReactMarkdown>
+            <div>
+              <ReactMarkdown 
+                className="prose dark:prose-invert prose-sm max-w-none"
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {message.content}
+              </ReactMarkdown>
+              <AttachmentDisplay attachments={message.attachments || []} isUser={false} />
+            </div>
           )}
         </div>
         {!isEditing && (

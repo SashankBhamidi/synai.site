@@ -1,7 +1,10 @@
 
+import { FileAttachment } from '@/types/attachments';
+
 export interface ApiMessage {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | { type: string; text?: string; image_url?: { url: string } }[];
+  attachments?: FileAttachment[];
 }
 
 export interface AiRequestOptions {
@@ -12,6 +15,7 @@ export interface AiRequestOptions {
   stream?: boolean;
   simulateResponse?: boolean;
   messages?: ApiMessage[];
+  attachments?: FileAttachment[];
 }
 
 export interface AiResponse {

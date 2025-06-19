@@ -1,5 +1,6 @@
 
 import { AIModel } from "./models";
+import { FileAttachment } from "./attachments";
 
 export interface Message {
   id: string;
@@ -8,6 +9,7 @@ export interface Message {
   timestamp: Date;
   model?: AIModel;
   regenerationCount?: number;
+  attachments?: FileAttachment[];
 }
 
 export interface Conversation {
@@ -35,5 +37,16 @@ export interface ConversationFolder {
   isExpanded?: boolean; // UI state for collapsible folders
 }
 
-// Export AIModel from models.ts using export type for isolated modules
+// Export types from other modules
 export type { AIModel } from "./models";
+export type { 
+  FileAttachment, 
+  AttachmentType, 
+  AttachmentValidation 
+} from "./attachments";
+export { 
+  ATTACHMENT_CONFIG, 
+  getAttachmentType, 
+  formatFileSize, 
+  isValidAttachment 
+} from "./attachments";

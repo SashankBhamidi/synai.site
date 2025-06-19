@@ -84,30 +84,81 @@ export class AnthropicService extends BaseProviderService {
     const convertedMessages = messages
       .filter(msg => msg.role !== 'system') // Anthropic doesn't use system messages in the messages array
       .map(msg => {
-        // Ensure content is always a string for Anthropic
-        const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
-        
-        // Validate content is not empty
-        if (!content.trim()) {
-          console.warn('Empty message content detected, using fallback');
+        // Handle multimodal content
+        if (Array.isArray(msg.content)) {
+          // Convert from OpenAI format to Anthropic format
+          const anthropicContent = [];
+          
+          for (const item of msg.content) {
+            if (item.type === 'text') {
+              anthropicContent.push({
+                type: 'text',
+                text: item.text || ''
+              });
+            } else if (item.type === 'image_url' && item.image_url?.url) {
+              // Convert base64 data URL to Anthropic format
+              const imageUrl = item.image_url.url;
+              if (imageUrl.startsWith('data:image/')) {
+                const [mimeType, base64Data] = imageUrl.substring(5).split(';base64,');
+                anthropicContent.push({
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: mimeType,
+                    data: base64Data
+                  }
+                });
+              }
+            }
+          }
+          
+          // Validate we have content
+          if (anthropicContent.length === 0) {
+            console.warn('Empty multimodal content detected, using fallback');
+            return {
+              role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+              content: msg.role === 'assistant' ? 'I understand.' : 'Hello'
+            };
+          }
+          
           return {
             role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
-            content: msg.role === 'assistant' ? 'I understand.' : 'Hello'
+            content: anthropicContent
+          };
+        } else {
+          // Handle text-only content
+          const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+          
+          // Validate content is not empty
+          if (!content.trim()) {
+            console.warn('Empty message content detected, using fallback');
+            return {
+              role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+              content: msg.role === 'assistant' ? 'I understand.' : 'Hello'
+            };
+          }
+          
+          return {
+            role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
+            content: content
           };
         }
-        
-        return {
-          role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
-          content: content
-        };
       })
-      .filter(msg => msg.content.trim().length > 0); // Remove any empty messages
+      .filter(msg => {
+        // Filter out empty messages
+        if (typeof msg.content === 'string') {
+          return msg.content.trim().length > 0;
+        } else if (Array.isArray(msg.content)) {
+          return msg.content.length > 0;
+        }
+        return false;
+      });
     
     console.log('Converted to Anthropic format:', JSON.stringify(convertedMessages, null, 2));
     return convertedMessages;
   }
 
-  private validateMessageOrder(messages: Array<{role: string; content: string}>) {
+  private validateMessageOrder(messages: Array<{role: string; content: string | any[]}>) {
     // Anthropic requires messages to start with user and alternate user/assistant
     const validatedMessages = [];
     

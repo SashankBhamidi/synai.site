@@ -29,7 +29,7 @@ export class OpenAIService extends BaseProviderService {
       
       // Validate message format before sending
       openaiMessages.forEach((msg, index) => {
-        if (typeof msg.content !== 'string') {
+        if (typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
           console.error(`Message ${index} has invalid content type:`, typeof msg.content, msg.content);
         }
       });
@@ -112,7 +112,18 @@ export class OpenAIService extends BaseProviderService {
   private generateSimulatedResponse(assistantName: string, model: string, messages?: ApiMessage[]): string {
     // Use conversation context for better simulated responses
     if (messages && messages.length > 0) {
-      const lastUserMessage = messages[messages.length - 1]?.content || "Hello";
+      const lastMessage = messages[messages.length - 1];
+      let lastUserMessage = "Hello";
+      
+      if (lastMessage?.content) {
+        if (typeof lastMessage.content === 'string') {
+          lastUserMessage = lastMessage.content;
+        } else if (Array.isArray(lastMessage.content)) {
+          // Extract text from multimodal content
+          const textContent = lastMessage.content.find(item => item.type === 'text');
+          lastUserMessage = textContent?.text || "Hello";
+        }
+      }
       
       // Generate varied responses to prevent repetition
       const responses = [
