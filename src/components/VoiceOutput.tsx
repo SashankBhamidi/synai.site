@@ -91,12 +91,27 @@ export function VoiceOutput({ text, autoPlay = false, className }: VoiceOutputPr
 
   // Auto-play functionality
   useEffect(() => {
-    if (autoPlay && isSupported && text.trim()) {
+    if (autoPlay && isSupported && text && text.trim()) {
       handlePlay();
     }
   }, [autoPlay, isSupported, text]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        if (speechSynthesis.speaking) {
+          speechSynthesis.cancel();
+        }
+      } catch (error) {
+        console.warn('Error during voice cleanup:', error);
+      }
+    };
+  }, []);
 
   const cleanText = (text: string): string => {
+    if (!text || typeof text !== 'string') return '';
+    
     // Remove markdown formatting and other artifacts for better speech
     return text
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
@@ -104,8 +119,11 @@ export function VoiceOutput({ text, autoPlay = false, className }: VoiceOutputPr
       .replace(/`(.*?)`/g, '$1') // Remove inline code
       .replace(/```[\s\S]*?```/g, '[Code block]') // Replace code blocks
       .replace(/\[(\d+)\]\(.*?\)/g, 'Reference $1') // Replace citation links
+      .replace(/#{1,6}\s*/g, '') // Remove markdown headers
       .replace(/\n+/g, '. ') // Replace line breaks with pauses
       .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/[\u2018\u2019]/g, "'") // Replace smart quotes
+      .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
       .trim();
   };
 
@@ -115,79 +133,148 @@ export function VoiceOutput({ text, autoPlay = false, className }: VoiceOutputPr
       return;
     }
 
-    if (!text.trim()) {
+    if (!text || !text.trim()) {
       toast.error("No text to read");
       return;
     }
 
     // Stop any current speech
-    speechSynthesis.cancel();
-
-    const cleanedText = cleanText(text);
-    const utterance = new SpeechSynthesisUtterance(cleanedText);
-    
-    // Apply settings
-    utterance.rate = settings.rate;
-    utterance.pitch = settings.pitch;
-    utterance.volume = settings.volume;
-    
-    // Set voice
-    if (settings.voice !== 'default') {
-      const selectedVoice = availableVoices.find(voice => voice.name === settings.voice);
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
+    try {
+      speechSynthesis.cancel();
+      // Small delay to ensure cancellation is processed
+      setTimeout(() => {
+        startSpeech();
+      }, 100);
+    } catch (error) {
+      console.warn('Error cancelling speech:', error);
+      startSpeech();
     }
+  };
+  
+  const startSpeech = () => {
+    const cleanedText = cleanText(text);
+    
+    if (!cleanedText) {
+      toast.error("No valid text to read");
+      return;
+    }
+    
+    // Split long text into chunks for better reliability
+    const maxLength = 200;
+    const chunks = [];
+    for (let i = 0; i < cleanedText.length; i += maxLength) {
+      chunks.push(cleanedText.slice(i, i + maxLength));
+    }
+    
+    let currentChunk = 0;
+    
+    const speakChunk = () => {
+      if (currentChunk >= chunks.length) {
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(100);
+        setTimeout(() => setProgress(0), 1000);
+        return;
+      }
+      
+      const utterance = new SpeechSynthesisUtterance(chunks[currentChunk]);
+      
+      // Apply settings
+      utterance.rate = Math.max(0.1, Math.min(2.0, settings.rate));
+      utterance.pitch = Math.max(0.1, Math.min(2.0, settings.pitch));
+      utterance.volume = Math.max(0, Math.min(1, settings.volume));
+      
+      // Set voice
+      if (settings.voice !== 'default' && availableVoices.length > 0) {
+        const selectedVoice = availableVoices.find(voice => voice.name === settings.voice);
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+      }
 
-    // Event handlers
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setIsPaused(false);
+      // Event handlers
+      utterance.onstart = () => {
+        if (currentChunk === 0) {
+          setIsPlaying(true);
+          setIsPaused(false);
+        }
+      };
+
+      utterance.onend = () => {
+        currentChunk++;
+        const progressPercent = (currentChunk / chunks.length) * 100;
+        setProgress(progressPercent);
+        
+        if (currentChunk < chunks.length && !isPaused) {
+          // Continue with next chunk
+          setTimeout(speakChunk, 50);
+        } else {
+          setIsPlaying(false);
+          setIsPaused(false);
+          setTimeout(() => setProgress(0), 1000);
+        }
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+        if (event.error !== 'interrupted' && event.error !== 'cancelled') {
+          toast.error(`Speech error: ${event.error}`);
+        }
+      };
+
+      utteranceRef.current = utterance;
+      
+      try {
+        speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error('Error starting speech:', error);
+        toast.error("Failed to start speech");
+        setIsPlaying(false);
+        setIsPaused(false);
+        setProgress(0);
+      }
     };
-
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(0);
-    };
-
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(0);
-      toast.error("Speech synthesis failed");
-    };
-
-    utterance.onboundary = (event) => {
-      // Update progress based on character position
-      const progressPercent = (event.charIndex / cleanedText.length) * 100;
-      setProgress(Math.min(progressPercent, 100));
-    };
-
-    utteranceRef.current = utterance;
-    speechSynthesis.speak(utterance);
+    
+    speakChunk();
   };
 
   const handlePause = () => {
-    if (speechSynthesis.speaking && !speechSynthesis.paused) {
-      speechSynthesis.pause();
-      setIsPaused(true);
+    try {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+        setIsPaused(true);
+      }
+    } catch (error) {
+      console.error('Error pausing speech:', error);
     }
   };
 
   const handleResume = () => {
-    if (speechSynthesis.paused) {
-      speechSynthesis.resume();
-      setIsPaused(false);
+    try {
+      if (speechSynthesis.paused) {
+        speechSynthesis.resume();
+        setIsPaused(false);
+      }
+    } catch (error) {
+      console.error('Error resuming speech:', error);
+      // If resume fails, try to restart
+      handlePlay();
     }
   };
 
   const handleStop = () => {
-    speechSynthesis.cancel();
-    setIsPlaying(false);
-    setIsPaused(false);
-    setProgress(0);
+    try {
+      speechSynthesis.cancel();
+    } catch (error) {
+      console.error('Error stopping speech:', error);
+    } finally {
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+    }
   };
 
   const handleSettingChange = (key: keyof VoiceSettings, value: any) => {

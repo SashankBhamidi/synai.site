@@ -55,14 +55,14 @@ export function ConversationBranching({
       // Get messages up to the selected message (inclusive)
       const branchMessages = messages.slice(0, messageIndex + 1);
       
-      // Create new conversation
+      // Create new conversation with unique title
       const conversation = createConversation(branchTitle.trim());
       
       // If there's a new prompt, add it as a user message
       let finalMessages = [...branchMessages];
       if (branchPrompt.trim()) {
         const newUserMessage: Message = {
-          id: Date.now().toString(),
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           role: "user",
           content: branchPrompt.trim(),
           timestamp: new Date()
@@ -71,13 +71,16 @@ export function ConversationBranching({
       }
       
       // Save the conversation with the branched messages
-      saveConversation(conversation, finalMessages);
+      try {
+        saveConversation(conversation, finalMessages);
+        console.log('Saved branch conversation:', conversation.id, 'with', finalMessages.length, 'messages');
+      } catch (saveError) {
+        console.error('Failed to save branch conversation:', saveError);
+        throw new Error('Failed to save branch conversation');
+      }
       
       // Switch to the new conversation
       setCurrentConversation(conversation.id);
-      
-      // Notify parent component
-      onBranchCreated?.(conversation.id);
       
       // Reset form and close dialog
       setBranchTitle("");
@@ -86,11 +89,16 @@ export function ConversationBranching({
       
       toast.success(`Created branch: ${branchTitle}`);
       
-      // Trigger a page refresh to load the new conversation
-      window.location.reload();
+      // Notify parent component and trigger reload
+      onBranchCreated?.(conversation.id);
+      
+      // Small delay before reload to ensure state is saved
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
       console.error('Failed to create branch:', error);
-      toast.error("Failed to create branch");
+      toast.error(`Failed to create branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Copy, Edit2, Trash2 } from "lucide-react";
 import { CopyButton } from "./CopyButton";
 import { VoiceOutput } from "./VoiceOutput";
-import { MessageReactions } from "./MessageReactions";
 import { ConversationBranching } from "./ConversationBranching";
 import { Message } from "@/types";
 
@@ -75,11 +74,6 @@ export function MessageActions({ message, messages, messageIndex, onRegenerate, 
         />
       )}
       
-      {/* Message reactions */}
-      <MessageReactions 
-        messageId={message.id} 
-        className="ml-2 border-l border-border/20 pl-2" 
-      />
       
       {/* Delete button for assistant messages only */}
       {isAssistant && onDelete && (

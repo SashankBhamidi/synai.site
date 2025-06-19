@@ -55,8 +55,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
     category: "Development",
     tags: ["code", "review", "development"],
     isFavorite: true,
-    createdAt: new Date("2024-01-01"),
-    usageCount: 15
+    createdAt: new Date(),
+    usageCount: 0
   },
   {
     id: "2",
@@ -65,8 +65,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
     category: "Education",
     tags: ["explain", "simple", "education"],
     isFavorite: true,
-    createdAt: new Date("2024-01-02"),
-    usageCount: 23
+    createdAt: new Date(),
+    usageCount: 0
   },
   {
     id: "3",
@@ -75,8 +75,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
     category: "Creative",
     tags: ["writing", "story", "creative"],
     isFavorite: false,
-    createdAt: new Date("2024-01-03"),
-    usageCount: 8
+    createdAt: new Date(),
+    usageCount: 0
   },
   {
     id: "4",
@@ -85,8 +85,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
     category: "Problem Solving",
     tags: ["problem", "solution", "framework"],
     isFavorite: false,
-    createdAt: new Date("2024-01-04"),
-    usageCount: 12
+    createdAt: new Date(),
+    usageCount: 0
   },
   {
     id: "5",
@@ -95,8 +95,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
     category: "Research",
     tags: ["research", "summary", "analysis"],
     isFavorite: true,
-    createdAt: new Date("2024-01-05"),
-    usageCount: 19
+    createdAt: new Date(),
+    usageCount: 0
   }
 ];
 
@@ -120,27 +120,47 @@ export function MessageTemplates({ onSelectTemplate }: MessageTemplatesProps) {
 
   // Load templates from localStorage
   useEffect(() => {
-    const savedTemplates = localStorage.getItem('message-templates');
-    if (savedTemplates) {
-      try {
-        const parsed = JSON.parse(savedTemplates).map((t: any) => ({
-          ...t,
-          createdAt: new Date(t.createdAt)
-        }));
-        setTemplates(parsed);
-      } catch (error) {
-        console.error('Failed to load templates:', error);
+    const loadTemplates = () => {
+      const savedTemplates = localStorage.getItem('message-templates');
+      if (savedTemplates) {
+        try {
+          const parsed = JSON.parse(savedTemplates).map((t: any) => ({
+            ...t,
+            createdAt: new Date(t.createdAt)
+          }));
+          // Ensure we have at least some templates
+          if (parsed.length === 0) {
+            setTemplates(DEFAULT_TEMPLATES);
+            localStorage.setItem('message-templates', JSON.stringify(DEFAULT_TEMPLATES));
+          } else {
+            setTemplates(parsed);
+          }
+        } catch (error) {
+          console.error('Failed to load templates:', error);
+          setTemplates(DEFAULT_TEMPLATES);
+          localStorage.setItem('message-templates', JSON.stringify(DEFAULT_TEMPLATES));
+        }
+      } else {
         setTemplates(DEFAULT_TEMPLATES);
+        localStorage.setItem('message-templates', JSON.stringify(DEFAULT_TEMPLATES));
       }
-    } else {
-      setTemplates(DEFAULT_TEMPLATES);
-    }
+    };
+    
+    loadTemplates();
   }, []);
 
-  // Save templates to localStorage
+  // Save templates to localStorage with validation
   const saveTemplates = (updatedTemplates: MessageTemplate[]) => {
-    setTemplates(updatedTemplates);
-    localStorage.setItem('message-templates', JSON.stringify(updatedTemplates));
+    try {
+      // Ensure we always have at least the default templates
+      const templatesToSave = updatedTemplates.length > 0 ? updatedTemplates : DEFAULT_TEMPLATES;
+      setTemplates(templatesToSave);
+      localStorage.setItem('message-templates', JSON.stringify(templatesToSave));
+      console.log('Templates saved:', templatesToSave.length);
+    } catch (error) {
+      console.error('Failed to save templates:', error);
+      toast.error('Failed to save templates');
+    }
   };
 
   // Filter templates
@@ -182,9 +202,55 @@ export function MessageTemplates({ onSelectTemplate }: MessageTemplatesProps) {
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    const updatedTemplates = templates.filter(t => t.id !== templateId);
-    saveTemplates(updatedTemplates);
-    toast.success("Template deleted");
+    const templateToDelete = templates.find(t => t.id === templateId);
+    if (!templateToDelete) {
+      toast.error("Template not found");
+      return;
+    }
+    
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete "${templateToDelete.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const updatedTemplates = templates.filter(t => t.id !== templateId);
+      
+      // Update state first
+      setTemplates(updatedTemplates);
+      
+      // Force update localStorage to ensure complete deletion
+      localStorage.setItem('message-templates', JSON.stringify(updatedTemplates));
+      
+      // Verify deletion
+      const verifyTemplates = localStorage.getItem('message-templates');
+      if (verifyTemplates) {
+        const parsed = JSON.parse(verifyTemplates);
+        const stillExists = parsed.find((t: any) => t.id === templateId);
+        if (stillExists) {
+          throw new Error('Template still exists after deletion');
+        }
+      }
+      
+      toast.success(`Template "${templateToDelete.title}" deleted permanently`);
+      console.log('Template deleted successfully:', templateId);
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      toast.error('Failed to delete template completely');
+      // Reload templates from localStorage to ensure consistency
+      const savedTemplates = localStorage.getItem('message-templates');
+      if (savedTemplates) {
+        try {
+          const parsed = JSON.parse(savedTemplates).map((t: any) => ({
+            ...t,
+            createdAt: new Date(t.createdAt)
+          }));
+          setTemplates(parsed);
+        } catch (parseError) {
+          setTemplates(DEFAULT_TEMPLATES);
+        }
+      }
+    }
   };
 
   const handleSaveNewTemplate = () => {
@@ -459,10 +525,6 @@ export function MessageTemplates({ onSelectTemplate }: MessageTemplatesProps) {
                             <Trash2 size={14} />
                           </Button>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Used {template.usageCount} times</span>
-                        <span>Created {template.createdAt.toLocaleDateString()}</span>
                       </div>
                     </>
                   )}
