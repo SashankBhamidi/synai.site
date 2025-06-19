@@ -28,10 +28,14 @@ export function CopyButton({ text, className = "" }: CopyButtonProps) {
       variant="ghost"
       size="sm"
       onClick={handleCopy}
-      className={`h-8 w-8 p-0 ${className}`}
+      className={`p-0 ${className}`}
       title="Copy to clipboard"
     >
-      {copied ? <Check size={14} /> : <Copy size={14} />}
+      {copied ? (
+        <Check size={13} className="text-green-500" />
+      ) : (
+        <Copy size={13} />
+      )}
     </Button>
   );
 }

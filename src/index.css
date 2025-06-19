@@ -271,6 +271,7 @@
 .chat-bubble {
   @apply relative rounded-2xl p-4 shadow-sm;
   @apply bg-gradient-to-br;
+  @apply overflow-hidden; /* Prevent content overflow */
 }
 
 .chat-bubble-user {
@@ -288,6 +289,20 @@
 
 .dark .chat-bubble-ai {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Message actions styling */
+.message-actions {
+  @apply flex items-center gap-1 mt-3 pt-2;
+  @apply border-t border-border/20;
+  @apply opacity-0 group-hover:opacity-100;
+  @apply transition-all duration-200;
+}
+
+.message-action-button {
+  @apply h-7 w-7 p-0 rounded-md;
+  @apply hover:bg-accent/50 transition-colors;
+  @apply flex items-center justify-center;
 }
 
 /* Enhanced avatar styling */

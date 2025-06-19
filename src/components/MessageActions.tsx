@@ -19,8 +19,11 @@ export function MessageActions({ message, onRegenerate, onEdit, onDelete, isLast
   const showRegenerate = isAssistant && isLastMessage && onRegenerate;
 
   return (
-    <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-      <CopyButton text={message.content} className="h-6 w-6" />
+    <div className="flex items-center justify-start gap-1 mt-3 pt-2 border-t border-border/20 opacity-0 group-hover:opacity-100 transition-all duration-200">
+      <CopyButton 
+        text={message.content} 
+        className="h-7 w-7 hover:bg-accent/50 rounded-md transition-colors" 
+      />
       
       {/* Edit button for user messages */}
       {isUser && onEdit && (
@@ -28,10 +31,10 @@ export function MessageActions({ message, onRegenerate, onEdit, onDelete, isLast
           variant="ghost"
           size="sm"
           onClick={onEdit}
-          className="h-6 w-6 p-0"
+          className="h-7 w-7 p-0 hover:bg-accent/50 rounded-md transition-colors"
           title="Edit message"
         >
-          <Edit2 size={12} />
+          <Edit2 size={13} />
         </Button>
       )}
       
@@ -41,10 +44,10 @@ export function MessageActions({ message, onRegenerate, onEdit, onDelete, isLast
           variant="ghost"
           size="sm"
           onClick={onRegenerate}
-          className="h-6 w-6 p-0"
+          className="h-7 w-7 p-0 hover:bg-accent/50 rounded-md transition-colors"
           title="Regenerate response"
         >
-          <RefreshCw size={12} />
+          <RefreshCw size={13} />
         </Button>
       )}
       
@@ -54,10 +57,10 @@ export function MessageActions({ message, onRegenerate, onEdit, onDelete, isLast
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
           title="Delete message"
         >
-          <Trash2 size={12} />
+          <Trash2 size={13} />
         </Button>
       )}
     </div>
