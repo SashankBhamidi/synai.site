@@ -2,10 +2,15 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Set up the worker for PDF.js
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-  ).toString();
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString();
+  } catch (error) {
+    // Fallback for environments where import.meta.url might not work
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.min.mjs';
+  }
 }
 
 export interface PDFExtractionResult {

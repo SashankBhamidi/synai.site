@@ -19,4 +19,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: 'esnext', // Support top-level await and modern features
+    rollupOptions: {
+      output: {
+        format: 'es'
+      }
+    }
+  },
+  esbuild: {
+    target: 'esnext' // Support top-level await in esbuild
+  }
 }));

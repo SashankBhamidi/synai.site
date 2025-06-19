@@ -96,38 +96,86 @@ export class PerplexityService extends BaseProviderService {
   private parsePerplexityResponse(content: string): string {
     console.log('Original Perplexity response:', content);
     
-    // More flexible patterns for sources section
+    // Remove internal reasoning blocks that shouldn't be shown to users
+    content = this.removeInternalReasoning(content);
+    
+    // Extract sources from the content
+    const { processedContent, sourceUrls } = this.extractSources(content);
+    
+    // Convert inline citations to clickable links
+    const finalContent = this.convertCitationsToLinks(processedContent, sourceUrls);
+    
+    console.log('Final processed content:', finalContent);
+    return finalContent;
+  }
+
+  private removeInternalReasoning(content: string): string {
+    // Remove <think> blocks and similar internal reasoning
+    const patterns = [
+      /<think>[\s\S]*?<\/think>/gi,
+      /<thinking>[\s\S]*?<\/thinking>/gi,
+      /^think[\s\S]*?(?=\n\n|$)/gmi,
+      /^<think[\s\S]*?(?=\n\n|$)/gmi
+    ];
+    
+    let cleanContent = content;
+    patterns.forEach(pattern => {
+      cleanContent = cleanContent.replace(pattern, '').trim();
+    });
+    
+    // Remove any leading "We are given..." or similar analysis text
+    cleanContent = cleanContent.replace(/^(?:We are given|The query is|According to|Based on)[\s\S]*?(?=\n\n|$)/gmi, '').trim();
+    
+    return cleanContent;
+  }
+
+  private extractSources(content: string): { processedContent: string; sourceUrls: Record<number, string> } {
+    // Enhanced patterns for finding sources sections
     const sourcesPatterns = [
       /\n\n(?:References?|Sources?):\s*([\s\S]*)$/i,
       /\n(?:References?|Sources?):\s*([\s\S]*)$/i,
-      /(?:References?|Sources?):\s*([\s\S]*)$/i
+      /(?:References?|Sources?):\s*([\s\S]*)$/i,
+      /\n\n\*\*(?:References?|Sources?)\*\*:?\s*([\s\S]*)$/i
     ];
     
     let sources: string[] = [];
     let sourceUrls: Record<number, string> = {};
     let sourcesMatch = null;
+    let processedContent = content;
     
     // Try different patterns to find sources
     for (const pattern of sourcesPatterns) {
       sourcesMatch = content.match(pattern);
-      if (sourcesMatch) break;
+      if (sourcesMatch) {
+        // Remove the sources section from main content
+        processedContent = content.replace(pattern, '').trim();
+        break;
+      }
     }
     
     if (sourcesMatch) {
       console.log('Found sources section:', sourcesMatch[1]);
       const sourcesText = sourcesMatch[1];
+      
+      // Parse sources more flexibly
       sources = sourcesText
         .split('\n')
         .map(line => line.trim())
-        .filter(line => line && (line.match(/^\d+\./) || line.match(/^-/) || line.includes('http') || line.includes('www.')))
-        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, ''));
+        .filter(line => line && (
+          line.match(/^\d+\./) || 
+          line.match(/^\[\d+\]/) || 
+          line.match(/^-/) || 
+          line.includes('http') || 
+          line.includes('www.')
+        ))
+        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^\[\d+\]\s*/, '').replace(/^-\s*/, ''));
       
       console.log('Parsed sources:', sources);
       
-      // Build a mapping of citation numbers to URLs
+      // Build a mapping of citation numbers to URLs with better URL extraction
       sources.forEach((source, index) => {
         const citationNum = index + 1;
-        const urlMatch = source.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/);
+        const urlMatch = source.match(/(https?:\/\/[^\s\[\]()]+|www\.[^\s\[\]()]+)/);
         if (urlMatch) {
           let url = urlMatch[1];
           if (!url.startsWith('http')) {
@@ -140,64 +188,42 @@ export class PerplexityService extends BaseProviderService {
       console.log('Source URLs mapping:', sourceUrls);
     }
     
-    // Always try to convert inline citations, even without explicit sources section
-    // This handles cases where Perplexity includes citations but not a sources section
-    const citationMatches = content.match(/\[(\d+)\]/g);
+    // Fallback: look for citations without explicit sources section
+    const citationMatches = processedContent.match(/\[(\d+)\]/g);
     if (citationMatches && Object.keys(sourceUrls).length === 0) {
-      console.log('Found citations without sources section, creating generic links');
-      // Create generic source URLs for citations without explicit sources
+      console.log('Found citations without sources section, creating placeholder links');
+      // Create placeholder URLs for citations without explicit sources
       citationMatches.forEach(match => {
         const num = parseInt(match.replace(/[\[\]]/g, ''));
         if (!sourceUrls[num]) {
-          sourceUrls[num] = `#source-${num}`;
+          sourceUrls[num] = `#citation-${num}`;
         }
       });
     }
     
-    // Convert inline citations [1], [2] etc. to clickable links
-    if (Object.keys(sourceUrls).length > 0) {
-      content = content.replace(/\[(\d+)\]/g, (match, num) => {
-        const citationNum = parseInt(num);
-        const url = sourceUrls[citationNum];
-        if (url) {
-          if (url.startsWith('#source-')) {
-            // For generic citations, just make them stand out
-            return `**[${num}]**`;
-          } else {
-            return `[${num}](${url} "Source ${num}")`;
-          }
-        }
-        return match;
-      });
+    return { processedContent, sourceUrls };
+  }
+
+  private convertCitationsToLinks(content: string, sourceUrls: Record<number, string>): string {
+    if (Object.keys(sourceUrls).length === 0) {
+      return content;
     }
     
-    // If we have real sources (not generic), create a structured response
-    if (sources.length > 0) {
-      // Remove the original sources section
-      for (const pattern of sourcesPatterns) {
-        content = content.replace(pattern, '');
-      }
-      
-      // Add structured sources section
-      content += '\n\n---\n\n**Sources:**\n';
-      sources.forEach((source, index) => {
-        const citationNum = index + 1;
-        const urlMatch = source.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/);
-        if (urlMatch) {
-          let url = urlMatch[1];
-          if (!url.startsWith('http')) {
-            url = 'https://' + url;
-          }
-          const title = source.replace(urlMatch[1], '').trim().replace(/^[-\s]*/, '').replace(/[-\s]*$/, '') || `Source ${citationNum}`;
-          content += `\n${citationNum}. [${title}](${url})`;
+    // Convert inline citations [1], [2] etc. to clickable markdown links
+    return content.replace(/\[(\d+)\]/g, (match, num) => {
+      const citationNum = parseInt(num);
+      const url = sourceUrls[citationNum];
+      if (url) {
+        if (url.startsWith('#citation-')) {
+          // For placeholder citations, just make them bold
+          return `**[${num}]**`;
         } else {
-          content += `\n${citationNum}. ${source}`;
+          // Create clickable link with proper formatting
+          return `[${num}](${url} "View source ${num}")`;
         }
-      });
-    }
-    
-    console.log('Final processed content:', content);
-    return content;
+      }
+      return match;
+    });
   }
 
   private convertMessagesToPerplexityFormat(messages: ApiMessage[]) {
