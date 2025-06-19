@@ -125,17 +125,26 @@ export function UsageAnalytics() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <BarChart3 size={16} />
-          Analytics
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full relative group hover:bg-accent transition-colors"
+        >
+          <BarChart3 size={18} className="group-hover:scale-110 transition-transform" />
+          <span className="sr-only">Usage Analytics</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BarChart3 size={20} />
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+        <DialogHeader className="pb-6 border-b">
+          <DialogTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <BarChart3 size={24} className="text-primary" />
+            </div>
             Usage Analytics
           </DialogTitle>
+          <p className="text-muted-foreground text-base mt-2">
+            Track your AI usage patterns and performance metrics
+          </p>
         </DialogHeader>
 
         {isLoading ? (

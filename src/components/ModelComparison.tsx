@@ -334,14 +334,26 @@ export function ModelComparison() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <BarChart3 size={16} className="mr-2" />
-          Compare Models
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full relative group hover:bg-accent transition-colors"
+        >
+          <BarChart3 size={18} className="group-hover:scale-110 transition-transform" />
+          <span className="sr-only">Compare Models</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Model Comparison Lab</DialogTitle>
+        <DialogHeader className="pb-6 border-b">
+          <DialogTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <BarChart3 size={24} className="text-primary" />
+            </div>
+            Model Comparison Lab
+          </DialogTitle>
+          <p className="text-muted-foreground text-base mt-2">
+            Compare AI models side-by-side to find the best fit for your use case
+          </p>
         </DialogHeader>
         
         <div className="flex flex-col h-[80vh]">

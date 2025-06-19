@@ -97,6 +97,7 @@ export class PerplexityService extends BaseProviderService {
     // Extract sources/references section if it exists
     const sourcesMatch = content.match(/\n\n(?:References?|Sources?):\s*([\s\S]*)$/i);
     let sources: string[] = [];
+    let sourceUrls: Record<number, string> = {};
     
     if (sourcesMatch) {
       // Parse sources from the references section
@@ -106,6 +107,27 @@ export class PerplexityService extends BaseProviderService {
         .map(line => line.trim())
         .filter(line => line && (line.match(/^\d+\./) || line.match(/^-/) || line.includes('http')))
         .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, ''));
+      
+      // Build a mapping of citation numbers to URLs
+      sources.forEach((source, index) => {
+        const citationNum = index + 1;
+        const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+        if (urlMatch) {
+          sourceUrls[citationNum] = urlMatch[1];
+        }
+      });
+    }
+    
+    // Convert inline citations [1], [2] etc. to clickable links if we have URLs
+    if (Object.keys(sourceUrls).length > 0) {
+      content = content.replace(/\[(\d+)\]/g, (match, num) => {
+        const citationNum = parseInt(num);
+        const url = sourceUrls[citationNum];
+        if (url) {
+          return `[${num}](${url} "Source ${num}")`;
+        }
+        return match; // Keep original if no URL found
+      });
     }
     
     // If we have sources, create a structured response with clickable citations
